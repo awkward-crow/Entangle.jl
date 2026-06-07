@@ -14,6 +14,21 @@ end
 
 FAIRModel(name::String, node::FAIRNode) = FAIRModel(name, [node])
 
+# Convenience: single-node model from raw parameters
+function FAIRModel(;
+    name::String = "org",
+    tef,
+    vulnerability,
+    primary_severity,
+    secondary_severity,
+    secondary_as_fraction::Bool = false,
+)
+    freq = FrequencyModel(tef, vulnerability)
+    mag  = MagnitudeModel(primary_severity, secondary_severity;
+                          secondary_as_fraction = secondary_as_fraction)
+    return FAIRModel(name, FAIRNode(freq, mag))
+end
+
 # ---- Sampling ----------------------------------------------------------------
 
 function rand_annual_loss(rng::AbstractRNG, model::FAIRModel)
