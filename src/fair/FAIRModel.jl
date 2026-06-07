@@ -41,3 +41,20 @@ rand_annual_loss(model::FAIRModel) = rand_annual_loss(Random.default_rng(), mode
 
 mean_annual_loss(model::FAIRModel) =
     sum(mean_annual_loss, model.nodes; init=0.0)
+
+# ---- simulate ----------------------------------------------------------------
+
+"""
+    simulate(model::FAIRModel; n_scenarios=10_000, seed=nothing) -> Vector{Float64}
+
+Draw `n_scenarios` independent annual aggregate losses from `model`.
+Pass an integer `seed` for reproducibility.
+"""
+function simulate(model::FAIRModel; n_scenarios::Int = 10_000, seed = nothing)
+    rng = seed === nothing ? Random.default_rng() : Xoshiro(seed)
+    losses = Vector{Float64}(undef, n_scenarios)
+    for i in eachindex(losses)
+        losses[i] = rand_annual_loss(rng, model)
+    end
+    return losses
+end
