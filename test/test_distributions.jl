@@ -1,3 +1,110 @@
+@testset "SplicedSeverity" begin
+
+    # Anchor case: PERT(0,5,10,4) body, threshold=10, GPD(2,0.5) tail, p_u=0.1.
+    # F_b = cdf(PERT, 10) = 1.0, so the body normalisation factor is trivial.
+    let body = PERT(0.0, 5.0, 10.0, 4.0), threshold = 10.0, tail = GPD(2.0, 0.5)
+        d = SplicedSeverity(body, threshold, tail; p_u = 0.1)
+
+        @testset "constructor" begin
+            @test d isa Distributions.ContinuousUnivariateDistribution
+            @test d.threshold == 10.0
+            @test d.p_u == 0.1
+            @test d.F_b ≈ 1.0
+        end
+
+        @testset "support" begin
+            @test minimum(d) == 0.0
+            @test maximum(d) == Inf
+            @test insupport(d, 0.0)
+            @test insupport(d, 5.0)
+            @test insupport(d, 10.0)
+            @test insupport(d, 15.0)
+            @test !insupport(d, -0.1)
+        end
+
+        @testset "logpdf / pdf" begin
+            # body side: f(5) = 0.9 × pdf(PERT, 5) / 1.0 = 0.9 × (3/16) = 27/160
+            @test pdf(d, 5.0) ≈ 27/160
+            @test logpdf(d, 5.0) ≈ log(27/160)
+            # tail side: f(12) = 0.1 × pdf(GPD(2,0.5), 2)
+            # pdf(GPD(2,0.5), 2) = (1/2)(1 + 0.5·2/2)^{−3} = (1/2)(1.5)^{−3} = 4/27
+            @test pdf(d, 12.0) ≈ 0.1 * 4/27
+            @test logpdf(d, 12.0) ≈ log(0.1 * 4/27)
+            # outside support
+            @test pdf(d, -1.0) == 0.0
+            @test logpdf(d, -1.0) == -Inf
+            # consistency
+            for x in [1.0, 5.0, 9.0, 11.0, 15.0]
+                @test exp(logpdf(d, x)) ≈ pdf(d, x)
+            end
+        end
+
+        @testset "cdf" begin
+            # body side: cdf(5) = 0.9 × cdf(PERT,5) / 1 = 0.9 × 0.5 = 0.45
+            @test cdf(d, 5.0) ≈ 0.45
+            # at threshold: 0.9 × F_b / F_b = 0.9
+            @test cdf(d, 10.0) ≈ 0.9
+            # tail side: 0.9 + 0.1 × cdf(GPD(2,0.5), 2)
+            # cdf(GPD(2,0.5), 2) = 1 − (1.5)^{−2} = 5/9
+            @test cdf(d, 12.0) ≈ 0.9 + 0.1 * 5/9
+            # below support
+            @test cdf(d, -1.0) == 0.0
+        end
+
+        @testset "quantile" begin
+            # body region: q=0.45 → body_p = 0.45/0.9 = 0.5 → quantile(PERT, 0.5) = 5
+            @test quantile(d, 0.45) ≈ 5.0
+            # boundary: q=0.9 → body_p = 1.0 → quantile(PERT, 1.0) = 10
+            @test quantile(d, 0.9) ≈ 10.0
+            # tail: q=0.95 → tail_p = 0.5 → 10 + quantile(GPD(2,0.5), 0.5)
+            # quantile(GPD(2,0.5), 0.5) = (2/0.5)((0.5)^{−0.5}−1) = 4(√2−1)
+            @test quantile(d, 0.95) ≈ 10.0 + 4*(sqrt(2) - 1)
+            # round-trip
+            for q in [0.1, 0.3, 0.5, 0.7, 0.9, 0.95, 0.99]
+                @test cdf(d, quantile(d, q)) ≈ q  atol=1e-10
+            end
+            @test quantile(d, 0.0) == 0.0
+            @test quantile(d, 1.0) == Inf
+            @test_throws DomainError quantile(d, -0.1)
+        end
+
+        @testset "median" begin
+            # cdf(d, 5) = 0.45 < 0.5, so median > 5 (in body region)
+            m = median(d)
+            @test cdf(d, m) ≈ 0.5  atol=1e-10
+        end
+
+        @testset "sampling" begin
+            rng = Xoshiro(TEST_SEED)
+            samples = rand(rng, d, 100_000)
+            @test all(s >= 0.0 for s in samples)
+            @test count(s > 10.0 for s in samples) / 100_000 ≈ 0.1  atol=0.01
+        end
+    end
+
+    @testset "default p_u from body CDF" begin
+        # Body extends beyond threshold; p_u = 1 − cdf(body, threshold)
+        body = Metalog([0.25, 0.75], [1.0, 3.0])       # unbounded, median = 2
+        d = SplicedSeverity(body, 4.0, GPD(1.0, 0.3))  # threshold above median
+        @test d.p_u ≈ 1 - cdf(body, 4.0)
+        # round-trip quantile / cdf
+        for q in [0.1, 0.3, 0.5, 0.7, 0.9]
+            @test cdf(d, quantile(d, q)) ≈ q  atol=1e-10
+        end
+    end
+
+    @testset "constructor errors" begin
+        body = PERT(0.0, 5.0, 10.0, 4.0)
+        tail = GPD(1.0, 0.5)
+        @test_throws ArgumentError SplicedSeverity(body, 10.0, tail; p_u = 0.0)
+        @test_throws ArgumentError SplicedSeverity(body, 10.0, tail; p_u = 1.0)
+        @test_throws ArgumentError SplicedSeverity(body, 10.0, tail; p_u = -0.1)
+        # threshold below body support → F_b = 0
+        @test_throws ArgumentError SplicedSeverity(body, -1.0, tail; p_u = 0.1)
+    end
+
+end
+
 @testset "Metalog" begin
 
     @testset "constructor — unbounded" begin
