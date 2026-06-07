@@ -44,6 +44,10 @@ function SplicedSeverity(
     )
 end
 
+# Convenience: SplicedSeverity(body=..., threshold=..., gpd=...)
+SplicedSeverity(; body, threshold, gpd::GPD, p_u::Real = 1 - cdf(body, threshold)) =
+    SplicedSeverity(body, threshold, gpd; p_u = p_u)
+
 # ---- Accessors ---------------------------------------------------------------
 
 Distributions.params(d::SplicedSeverity) = (d.body, d.threshold, d.tail, d.p_u)
