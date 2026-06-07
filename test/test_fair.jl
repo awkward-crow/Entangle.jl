@@ -96,6 +96,7 @@ end
         @testset "constructor" begin
             @test m.primary === pri
             @test m.secondary === sec
+            @test m.secondary_as_fraction == false
         end
 
         @testset "mean_loss" begin
@@ -150,6 +151,28 @@ end
         losses = [rand_loss(rng, m) for _ in 1:50_000]
         @test mean(losses) ≈ mean_loss(m)  atol=(mean_loss(m) * 0.03)
         @test all(>=(0.0), losses)
+    end
+
+    @testset "secondary_as_fraction" begin
+        # primary ~ Exp(2.0) → mean = 2.0
+        # fraction ~ Beta(2, 5) → mean = 2/7 ≈ 0.2857
+        # E[L] = E[primary] × (1 + E[fraction]) = 2.0 × (1 + 2/7) = 18/7
+        pri = Exponential(2.0)
+        frac = Beta(2.0, 5.0)
+        m = MagnitudeModel(pri, frac; secondary_as_fraction = true)
+
+        @test m.secondary_as_fraction == true
+        @test mean_loss(m) ≈ 2.0 * (1 + 2/7)  atol=1e-10
+
+        rng = Xoshiro(TEST_SEED)
+        losses = [rand_loss(rng, m) for _ in 1:100_000]
+        @test mean(losses) ≈ mean_loss(m)  atol=0.02
+        @test all(>=(0.0), losses)
+
+        # secondary must not exceed primary (fraction ∈ [0,1] → s = p·f ≤ p)
+        rng = Xoshiro(TEST_SEED)
+        components = [rand_components(rng, m) for _ in 1:10_000]
+        @test all(((p, s),) -> s <= p + 1e-12, components)
     end
 
 end

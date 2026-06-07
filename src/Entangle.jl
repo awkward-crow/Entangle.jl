@@ -14,6 +14,9 @@ include("fair/Magnitude.jl")
 include("fair/FAIRNode.jl")
 include("fair/FAIRModel.jl")
 
+# Re-export common Distributions.jl types so users only need `using Entangle`
+export Beta, Gamma, LogNormal, Exponential, Normal, Uniform, Poisson
+
 export GPD, PERT, Metalog, SplicedSeverity
 export FrequencyModel, rand_rate, rand_count, mean_rate
 export MagnitudeModel, rand_components, rand_loss, mean_loss
