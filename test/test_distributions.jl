@@ -1,3 +1,171 @@
+@testset "Metalog" begin
+
+    @testset "constructor — unbounded" begin
+        d = Metalog([0.25, 0.75], [1.0, 3.0])
+        @test d isa Distributions.ContinuousUnivariateDistribution
+        @test length(d.a) == 2
+        @test isinf(d.bl) && d.bl < 0
+
+        # 2-term case: Q(p) = a₁ + a₂·logit(p)
+        # System: a₁ − a₂·log(3) = 1, a₁ + a₂·log(3) = 3  →  a₁=2, a₂=1/log(3)
+        @test d.a[1] ≈ 2.0
+        @test d.a[2] ≈ 1 / log(3)
+
+        # 3-term fit
+        d3 = Metalog([0.1, 0.5, 0.9], [1.0, 3.0, 6.0])
+        @test length(d3.a) == 3
+        # fitted quantile must recover inputs exactly
+        @test Entangle._metalog_quantile(d3.a, 0.1) ≈ 1.0
+        @test Entangle._metalog_quantile(d3.a, 0.5) ≈ 3.0
+        @test Entangle._metalog_quantile(d3.a, 0.9) ≈ 6.0
+    end
+
+    @testset "constructor — semi-bounded lower" begin
+        # Fit to (ps=[0.25,0.75], qs=[1,3], lower=0)
+        # Target log-qs: [0, log(3)]  →  a₁=log(3)/2, a₂=0.5
+        d = Metalog([0.25, 0.75], [1.0, 3.0]; lower = 0.0)
+        @test isfinite(d.bl)
+        @test d.bl == 0.0
+        @test d.a[1] ≈ log(3) / 2
+        @test d.a[2] ≈ 0.5
+    end
+
+    @testset "constructor — validation errors" begin
+        # wrong length
+        @test_throws ArgumentError Metalog([0.25, 0.75], [1.0])
+        # too few points
+        @test_throws ArgumentError Metalog([0.5], [1.0])
+        # p out of (0,1)
+        @test_throws ArgumentError Metalog([0.0, 0.75], [1.0, 3.0])
+        @test_throws ArgumentError Metalog([0.25, 1.0], [1.0, 3.0])
+        # ps not strictly increasing
+        @test_throws ArgumentError Metalog([0.75, 0.25], [1.0, 3.0])
+        # qs not strictly increasing
+        @test_throws ArgumentError Metalog([0.25, 0.75], [3.0, 1.0])
+        # qs below lower bound
+        @test_throws ArgumentError Metalog([0.25, 0.75], [-1.0, 3.0]; lower = 0.0)
+        # invalid (Q' ≤ 0) — decreasing qs produce negative a₂
+        # already caught by qs strictly increasing check above
+    end
+
+    @testset "support — unbounded" begin
+        d = Metalog([0.25, 0.75], [1.0, 3.0])
+        @test minimum(d) == -Inf
+        @test maximum(d) == Inf
+        @test insupport(d, -1e10)
+        @test insupport(d, 0.0)
+        @test insupport(d, 1e10)
+        @test !insupport(d, Inf)
+        @test !insupport(d, NaN)
+    end
+
+    @testset "support — semi-bounded lower" begin
+        d = Metalog([0.25, 0.75], [1.0, 3.0]; lower = 0.0)
+        @test minimum(d) == 0.0
+        @test maximum(d) == Inf
+        @test insupport(d, 0.0)
+        @test insupport(d, 1.0)
+        @test !insupport(d, -0.1)
+    end
+
+    @testset "quantile — unbounded" begin
+        d = Metalog([0.25, 0.75], [1.0, 3.0])
+        # recovers input quantiles exactly
+        @test quantile(d, 0.25) ≈ 1.0
+        @test quantile(d, 0.75) ≈ 3.0
+        # median = a₁ = 2.0 (logit term vanishes at p=0.5)
+        @test quantile(d, 0.5) ≈ 2.0
+        # boundary
+        @test quantile(d, 0.0) == -Inf
+        @test quantile(d, 1.0) == Inf
+        @test_throws DomainError quantile(d, -0.1)
+        @test_throws DomainError quantile(d, 1.1)
+    end
+
+    @testset "quantile — semi-bounded lower" begin
+        d = Metalog([0.25, 0.75], [1.0, 3.0]; lower = 0.0)
+        @test quantile(d, 0.25) ≈ 1.0
+        @test quantile(d, 0.75) ≈ 3.0
+        # Q_sl(0.5) = 0 + exp(log(3)/2) = √3
+        @test quantile(d, 0.5) ≈ sqrt(3)
+        @test quantile(d, 0.0) == 0.0
+        @test quantile(d, 1.0) == Inf
+    end
+
+    @testset "cdf — unbounded" begin
+        d = Metalog([0.25, 0.75], [1.0, 3.0])
+        # round-trip: cdf(quantile(p)) ≈ p
+        for p in [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+            @test cdf(d, quantile(d, p)) ≈ p  atol=1e-10
+        end
+        @test cdf(d, -Inf) == 0.0 || cdf(d, quantile(d, 1e-12)) < 1e-10
+    end
+
+    @testset "cdf — semi-bounded lower" begin
+        d = Metalog([0.25, 0.75], [1.0, 3.0]; lower = 0.0)
+        @test cdf(d, 0.0) == 0.0
+        @test cdf(d, -1.0) == 0.0
+        for p in [0.1, 0.25, 0.5, 0.75, 0.9]
+            @test cdf(d, quantile(d, p)) ≈ p  atol=1e-10
+        end
+    end
+
+    @testset "logpdf / pdf — unbounded" begin
+        d = Metalog([0.25, 0.75], [1.0, 3.0])
+        # at median x=2: Q'(0.5) = a₂/(0.5·0.5) = 4/log(3)
+        # f(2) = log(3)/4
+        @test pdf(d, 2.0) ≈ log(3) / 4  atol=1e-8
+        @test logpdf(d, 2.0) ≈ log(log(3) / 4)  atol=1e-8
+        # consistency: exp(logpdf) == pdf
+        for x in [1.0, 2.0, 3.0, 0.0, 4.0]
+            @test exp(logpdf(d, x)) ≈ pdf(d, x)  atol=1e-10
+        end
+    end
+
+    @testset "logpdf / pdf — semi-bounded lower" begin
+        d = Metalog([0.25, 0.75], [1.0, 3.0]; lower = 0.0)
+        @test pdf(d, -0.1) == 0.0
+        @test logpdf(d, -0.1) == -Inf
+        for x in [0.5, 1.0, sqrt(3), 3.0, 5.0]
+            @test exp(logpdf(d, x)) ≈ pdf(d, x)  atol=1e-10
+        end
+    end
+
+    @testset "median" begin
+        d = Metalog([0.25, 0.75], [1.0, 3.0])
+        @test median(d) ≈ 2.0
+        d_sl = Metalog([0.25, 0.75], [1.0, 3.0]; lower = 0.0)
+        @test median(d_sl) ≈ sqrt(3)
+    end
+
+    @testset "mean" begin
+        # 2-term symmetric: Q(p) = 2 + (1/log3)·logit(p)
+        # mean = ∫₀¹ Q(p)dp = 2 + 0 = 2 (logit integrates to 0)
+        d = Metalog([0.25, 0.75], [1.0, 3.0])
+        @test mean(d) ≈ 2.0  atol=1e-4
+    end
+
+    @testset "sampling — unbounded" begin
+        d = Metalog([0.25, 0.75], [1.0, 3.0])
+        rng = Xoshiro(TEST_SEED)
+        samples = rand(rng, d, 50_000)
+        @test abs(mean(samples) - mean(d)) < 0.05
+        # empirical quantiles close to theoretical
+        sort!(samples)
+        @test abs(samples[Int(0.25 * 50_000)] - 1.0) < 0.05
+        @test abs(samples[Int(0.75 * 50_000)] - 3.0) < 0.05
+    end
+
+    @testset "sampling — semi-bounded lower" begin
+        d = Metalog([0.25, 0.75], [1.0, 3.0]; lower = 0.0)
+        rng = Xoshiro(TEST_SEED)
+        samples = rand(rng, d, 50_000)
+        @test all(s >= 0.0 for s in samples)
+        @test abs(samples[Int(0.5 * 50_000)] - sqrt(3)) < 0.1
+    end
+
+end
+
 @testset "PERT" begin
 
     @testset "constructor" begin
