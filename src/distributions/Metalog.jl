@@ -117,6 +117,11 @@ function Metalog(ps::AbstractVector, qs::AbstractVector; lower::Real = -Inf)
     return Metalog{T}(a, bl)
 end
 
+# Convenience: Metalog(quantiles = [0.10 => 1.0, 0.50 => 3.0, 0.90 => 6.0])
+function Metalog(; quantiles::AbstractVector{<:Pair}, lower::Real = -Inf)
+    Metalog(first.(quantiles), last.(quantiles); lower = lower)
+end
+
 # ---- Accessors ---------------------------------------------------------------
 
 Distributions.params(d::Metalog) = (d.a, d.bl)
