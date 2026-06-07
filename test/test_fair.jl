@@ -83,3 +83,73 @@
     end
 
 end
+
+@testset "Magnitude" begin
+
+    # Exponential components: exact means, easy to verify
+    # primary ~ Exp(2.0) → mean = 2.0
+    # secondary ~ Exp(1.0) → mean = 1.0
+    # total mean = 3.0
+    let pri = Exponential(2.0), sec = Exponential(1.0)
+        m = MagnitudeModel(pri, sec)
+
+        @testset "constructor" begin
+            @test m.primary === pri
+            @test m.secondary === sec
+        end
+
+        @testset "mean_loss" begin
+            @test mean_loss(m) ≈ 3.0
+        end
+
+        @testset "rand_components" begin
+            rng = Xoshiro(TEST_SEED)
+            (p, s) = rand_components(rng, m)
+            @test p isa Float64
+            @test s isa Float64
+            @test p >= 0.0
+            @test s >= 0.0
+
+            # simulate and check marginal means
+            rng = Xoshiro(TEST_SEED)
+            ps = [rand_components(rng, m) for _ in 1:100_000]
+            @test mean(first.(ps)) ≈ 2.0  atol=0.02
+            @test mean(last.(ps))  ≈ 1.0  atol=0.02
+        end
+
+        @testset "rand_loss" begin
+            rng = Xoshiro(TEST_SEED)
+            l = rand_loss(rng, m)
+            @test l isa Float64
+            @test l >= 0.0
+
+            rng = Xoshiro(TEST_SEED)
+            losses = [rand_loss(rng, m) for _ in 1:100_000]
+            @test mean(losses) ≈ 3.0  atol=0.02
+        end
+
+        @testset "components sum to total" begin
+            rng = Xoshiro(TEST_SEED)
+            for _ in 1:1_000
+                rng2 = copy(rng)
+                (p, s) = rand_components(rng, m)
+                l = rand_loss(rng2, m)
+                @test p + s ≈ l
+            end
+        end
+    end
+
+    @testset "SplicedSeverity components" begin
+        pri = SplicedSeverity(LogNormal(0.0, 1.0), 5.0, GPD(2.0, 0.4); p_u=0.1)
+        sec = SplicedSeverity(Exponential(1.0), 3.0, GPD(1.0, 0.2); p_u=0.05)
+        m = MagnitudeModel(pri, sec)
+
+        @test mean_loss(m) ≈ mean(pri) + mean(sec)  atol=1e-10
+
+        rng = Xoshiro(TEST_SEED)
+        losses = [rand_loss(rng, m) for _ in 1:50_000]
+        @test mean(losses) ≈ mean_loss(m)  atol=(mean_loss(m) * 0.03)
+        @test all(>=(0.0), losses)
+    end
+
+end
