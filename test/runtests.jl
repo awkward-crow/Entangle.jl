@@ -12,4 +12,5 @@ const TEST_SEED = _parse_seed(ARGS, 1033142)
 
 @testset "Entangle.jl" begin
     include("test_distributions.jl")
+    include("test_fair.jl")
 end
