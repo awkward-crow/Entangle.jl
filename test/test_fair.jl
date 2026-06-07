@@ -153,3 +153,103 @@ end
     end
 
 end
+
+@testset "FAIRNode" begin
+
+    # freq: mean_rate = E[λ]·E[V] = 3.0 × 0.25 = 0.75
+    # mag:  mean_loss = 2.0 + 1.0 = 3.0
+    # E[annual loss] = 0.75 × 3.0 = 2.25  (Wald's identity)
+    let freq = FrequencyModel(Gamma(3.0, 1.0), Beta(25.0, 75.0)),
+        mag  = MagnitudeModel(Exponential(2.0), Exponential(1.0))
+
+        node = FAIRNode(freq, mag)
+
+        @testset "constructor" begin
+            @test node.frequency === freq
+            @test node.magnitude === mag
+        end
+
+        @testset "mean_annual_loss" begin
+            @test mean_annual_loss(node) ≈ 2.25
+        end
+
+        @testset "rand_annual_loss type and sign" begin
+            rng = Xoshiro(TEST_SEED)
+            l = rand_annual_loss(rng, node)
+            @test l isa Float64
+            @test l >= 0.0
+        end
+
+        @testset "simulated mean ≈ Wald expectation" begin
+            rng = Xoshiro(TEST_SEED)
+            losses = [rand_annual_loss(rng, node) for _ in 1:200_000]
+            @test mean(losses) ≈ 2.25  atol=0.05
+            @test all(>=(0.0), losses)
+        end
+
+        @testset "zero-frequency node produces zero loss" begin
+            # near-zero rate: mean_rate ≈ 1e-6
+            node0 = FAIRNode(
+                FrequencyModel(Gamma(1.0, 1e-6), Beta(1.0, 1.0)),
+                mag,
+            )
+            rng = Xoshiro(TEST_SEED)
+            losses = [rand_annual_loss(rng, node0) for _ in 1:10_000]
+            @test mean(losses) ≈ 0.0  atol=0.001
+        end
+    end
+
+end
+
+@testset "FAIRModel" begin
+
+    let freq = FrequencyModel(Gamma(2.0, 1.0), Beta(10.0, 10.0)),
+        mag  = MagnitudeModel(Exponential(5.0), Exponential(2.0))
+
+        node = FAIRNode(freq, mag)
+
+        # single-node constructor
+        model = FAIRModel("test_org", node)
+
+        @testset "constructor (single node)" begin
+            @test model.name == "test_org"
+            @test length(model.nodes) == 1
+            @test model.nodes[1] === node
+        end
+
+        @testset "mean_annual_loss single node" begin
+            @test mean_annual_loss(model) ≈ mean_annual_loss(node)
+        end
+
+        @testset "rand_annual_loss type and sign" begin
+            rng = Xoshiro(TEST_SEED)
+            l = rand_annual_loss(rng, model)
+            @test l isa Float64
+            @test l >= 0.0
+        end
+
+        # multi-node model: total mean = sum of node means
+        node2 = FAIRNode(
+            FrequencyModel(Gamma(1.0, 0.5), Beta(5.0, 95.0)),
+            MagnitudeModel(Exponential(10.0), Exponential(1.0)),
+        )
+        model2 = FAIRModel("test_org_multi", [node, node2])
+
+        @testset "constructor (multi-node)" begin
+            @test length(model2.nodes) == 2
+        end
+
+        @testset "mean_annual_loss multi-node = sum" begin
+            @test mean_annual_loss(model2) ≈
+                mean_annual_loss(node) + mean_annual_loss(node2)
+        end
+
+        @testset "simulated mean ≈ analytical mean" begin
+            rng = Xoshiro(TEST_SEED)
+            losses = [rand_annual_loss(rng, model2) for _ in 1:200_000]
+            @test mean(losses) ≈ mean_annual_loss(model2)  atol=0.1
+            @test all(>=(0.0), losses)
+        end
+    end
+
+end

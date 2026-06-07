@@ -11,9 +11,12 @@ include("distributions/SplicedSeverity.jl")
 
 include("fair/Frequency.jl")
 include("fair/Magnitude.jl")
+include("fair/FAIRNode.jl")
+include("fair/FAIRModel.jl")
 
 export GPD, PERT, Metalog, SplicedSeverity
 export FrequencyModel, rand_rate, rand_count, mean_rate
 export MagnitudeModel, rand_components, rand_loss, mean_loss
+export FAIRNode, FAIRModel, rand_annual_loss, mean_annual_loss
 
 end # module Entangle
