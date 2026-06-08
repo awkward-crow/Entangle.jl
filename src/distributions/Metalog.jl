@@ -78,6 +78,14 @@ function _metalog_fit(ps::AbstractVector, qs_target::AbstractVector)
     return M \ T.(qs_target)
 end
 
+# Grid density limitation: a non-monotone wiggle narrower than ~1/n_grid on the
+# probability axis can pass undetected. Three paths to a stronger check:
+#   1. Denser grid (e.g. 10_000) — cheap, still not a guarantee.
+#   2. Find minima of Q'(p) by solving Q''(p) = 0 numerically and evaluating
+#      Q' there — exact, but requires a root-finder for each fit.
+#   3. Check at the input ps and a few Chebyshev nodes between them — wiggles
+#      in practice appear near/between fitted points, so this catches the
+#      common failure modes cheaply.
 function _metalog_check_valid(a::Vector{T}) where {T<:AbstractFloat}
     n_grid = 1000
     for i in 1:n_grid
