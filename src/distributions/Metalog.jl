@@ -16,6 +16,7 @@ if the inputs produce an invalid distribution.
 
 Sampling is O(1) via the inverse-CDF method. CDF evaluation uses bisection.
 """
+
 struct Metalog{T<:AbstractFloat} <: ContinuousUnivariateDistribution
     a::Vector{T}  # coefficients of the underlying unbounded metalog
     bl::T         # lower bound; -Inf means unbounded

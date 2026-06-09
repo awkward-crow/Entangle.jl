@@ -12,6 +12,7 @@ The mean is the classic PERT formula (a + λb + c)/(λ + 2), placing λ times
 as much weight on the mode as on the endpoints. Standard FAIR tooling uses
 λ = 4.
 """
+
 struct PERT{T<:Real} <: ContinuousUnivariateDistribution
     a::T   # minimum
     b::T   # mode

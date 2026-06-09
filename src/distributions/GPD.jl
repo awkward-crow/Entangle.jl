@@ -11,6 +11,7 @@ attraction. The shape parameter controls tail behaviour:
 - ξ = 0: exponential tail; equivalent to Exponential(1/σ); support [0, ∞)
 - ξ < 0: bounded upper tail; support [0, -σ/ξ]
 """
+
 struct GPD{T<:Real} <: ContinuousUnivariateDistribution
     σ::T  # scale
     ξ::T  # shape

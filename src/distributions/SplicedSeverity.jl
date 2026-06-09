@@ -15,6 +15,7 @@ untruncated: when the body distribution assigns all its mass below the
 threshold the factor cancels exactly, and when it does not the tail above
 the threshold is simply replaced by the GPD without renormalising the body.
 """
+
 struct SplicedSeverity{T<:AbstractFloat, B<:ContinuousUnivariateDistribution} <: ContinuousUnivariateDistribution
     body::B         # body distribution
     threshold::T    # splice point
