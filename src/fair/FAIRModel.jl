@@ -30,10 +30,13 @@ function FAIRModel(;
     return FAIRModel(name, FAIRNode(freq, mag))
 end
 
+Distributions.partype(model::FAIRModel) =
+    isempty(model.nodes) ? Float64 : partype(first(model.nodes))
+
 # ---- Sampling ----------------------------------------------------------------
 
 function rand_annual_loss(rng::AbstractRNG, model::FAIRModel)
-    return sum(node -> rand_annual_loss(rng, node), model.nodes; init=0.0)
+    return sum(node -> rand_annual_loss(rng, node), model.nodes; init=zero(partype(model)))
 end
 
 rand_annual_loss(model::FAIRModel) = rand_annual_loss(Random.default_rng(), model)
@@ -41,21 +44,17 @@ rand_annual_loss(model::FAIRModel) = rand_annual_loss(Random.default_rng(), mode
 # ---- Moments -----------------------------------------------------------------
 
 mean_annual_loss(model::FAIRModel) =
-    sum(mean_annual_loss, model.nodes; init=0.0)
+    sum(mean_annual_loss, model.nodes; init=zero(partype(model)))
 
 # ---- simulate ----------------------------------------------------------------
 
 """
-    simulate(model::FAIRModel; n_scenarios=10_000, seed=nothing) -> Vector{Float64}
+    simulate(model::FAIRModel; n_scenarios=10_000, seed=nothing) -> Vector
 
 Draw `n_scenarios` independent annual aggregate losses from `model`.
 Pass an integer `seed` for reproducibility.
 """
 function simulate(model::FAIRModel; n_scenarios::Int = 10_000, seed = nothing)
     rng = seed === nothing ? Random.default_rng() : Xoshiro(seed)
-    losses = Vector{Float64}(undef, n_scenarios)
-    for i in eachindex(losses)
-        losses[i] = rand_annual_loss(rng, model)
-    end
-    return losses
+    return [rand_annual_loss(rng, model) for _ in 1:n_scenarios]
 end

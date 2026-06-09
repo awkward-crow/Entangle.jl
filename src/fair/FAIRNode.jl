@@ -15,11 +15,13 @@ struct FAIRNode{F<:FrequencyModel, M<:MagnitudeModel}
     magnitude::M
 end
 
+Distributions.partype(node::FAIRNode) = partype(node.magnitude)
+
 # ---- Sampling ----------------------------------------------------------------
 
 function rand_annual_loss(rng::AbstractRNG, node::FAIRNode)
     n = rand_count(rng, node.frequency)
-    return sum(_ -> rand_loss(rng, node.magnitude), 1:n; init=0.0)
+    return sum(_ -> rand_loss(rng, node.magnitude), 1:n; init=zero(partype(node)))
 end
 
 rand_annual_loss(node::FAIRNode) = rand_annual_loss(Random.default_rng(), node)

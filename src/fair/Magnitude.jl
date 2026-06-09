@@ -47,6 +47,8 @@ rand_loss(m::MagnitudeModel) = rand_loss(Random.default_rng(), m)
 
 # ---- Moments -----------------------------------------------------------------
 
+Distributions.partype(m::MagnitudeModel) = partype(m.primary)
+
 function mean_loss(m::MagnitudeModel)
     # E[L] = E[primary] · (1 + E[fraction])  when secondary_as_fraction
     m.secondary_as_fraction && return mean(m.primary) * (1 + mean(m.secondary))
