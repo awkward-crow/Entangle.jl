@@ -17,6 +17,7 @@ The fractional form is appropriate when secondary costs (fines, litigation,
 reputational damage) are elicited as a proportion of primary severity rather
 than as an independent absolute amount.
 """
+
 struct MagnitudeModel{P<:ContinuousUnivariateDistribution,
                       S<:ContinuousUnivariateDistribution}
     primary::P

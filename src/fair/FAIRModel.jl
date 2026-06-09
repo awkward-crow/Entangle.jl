@@ -2,11 +2,12 @@
     FAIRModel(name, nodes)
     FAIRModel(name, node)
 
-Single-organisation FAIR model: a named collection of `FAIRNode`s whose annual
-losses are summed to give total annual loss.
+Single-organisation FAIR model: a named collection of `FAIRNode`s whose
+annual aggregate losses are summed to give a total annual aggregate loss:
 
-    S_org = ∑_k S_k,   S_k ~ compound Poisson (node k)
+    S_org = ∑_k S_k,   S_k ~ compound Cox process (node k)
 """
+
 struct FAIRModel
     name::String
     nodes::Vector{FAIRNode}

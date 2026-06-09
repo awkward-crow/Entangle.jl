@@ -2,13 +2,14 @@
     FAIRNode(frequency, magnitude)
 
 One risk scenario in the FAIR hierarchy. Combines a `FrequencyModel` and a
-`MagnitudeModel` to produce an annual loss via a compound Poisson process:
+`MagnitudeModel` to produce realisations of annual aggregate loss:
 
     S = ∑_{i=1}^{N} L_i,   N ~ Poisson(λV)
 
 where N is drawn from the frequency model and each L_i is drawn independently
-from the magnitude model.
+from the magnitude model. 
 """
+
 struct FAIRNode{F<:FrequencyModel, M<:MagnitudeModel}
     frequency::F
     magnitude::M

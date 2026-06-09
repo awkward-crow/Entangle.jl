@@ -12,6 +12,7 @@ Both parameters are uncertain; each simulated scenario draws fresh λ and V
 realisations, so the marginal count distribution is overdispersed relative to a
 fixed-rate Poisson.
 """
+
 struct FrequencyModel{T<:UnivariateDistribution, U<:UnivariateDistribution}
     tef::T
     vulnerability::U
