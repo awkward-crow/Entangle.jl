@@ -15,9 +15,7 @@ include("fair/Magnitude.jl")
 include("fair/FAIRNode.jl")
 include("fair/FAIRModel.jl")
 
-include("metrics/AEL.jl")
-include("metrics/PML.jl")
-include("metrics/EPCurve.jl")
+include("Metrics.jl")
 
 # Re-export common Distributions.jl types so users only need `using Entangle`
 export Beta, Gamma, LogNormal, Exponential, Normal, Uniform, Poisson
