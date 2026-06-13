@@ -1,10 +1,10 @@
 # Entangle.jl
 
-**Cyber risk quantification in Julia, built on the FAIR framework.**
+**Cyber risk quantification based on the FAIR framework.**
 
-Models the annual loss distribution for a single organisation as a compound Poisson process, with a spliced severity distribution combining expert-elicited body distributions and a Generalised Pareto tail. Outputs exceedance probability curves and PML estimates in standard catastrophe modelling format.
+Models the annual loss distribution for a single organisation as a compound Poisson process with a spliced severity distribution combining expert-elicited body distributions and a Generalised Pareto tail. It produces exceedance probability curves and PML estimates in standard catastrophe modelling format.
 
-Portfolio-level simulation with copula-based correlation is planned but not yet implemented.
+[Portfolio-level simulation with copula-based correlation is planned but not yet implemented.]
 
 ---
 
@@ -22,7 +22,7 @@ Portfolio-level simulation with copula-based correlation is planned but not yet 
 - `FAIRNode`, `FAIRModel` — compose frequency and magnitude into a compound Poisson annual loss model
 - `simulate` — Monte Carlo engine returning a vector of annual loss draws
 
-**Metrics** (`src/metrics/`)
+**Metrics** (`src/Metrics.jl/`)
 - `ael` — Annual Expected Loss
 - `pml` — Probable Maximum Loss at a given return period
 - `exceedance_probability` — EP curve at standard return periods (5, 10, 20, 50, 100, 200, 250, 500, 1000 years)
