@@ -9,15 +9,15 @@ annual aggregate losses are summed to give a total annual aggregate loss:
 """
 
 struct FAIRModel
-    name::String
+    name::Symbol
     nodes::Vector{FAIRNode}
 end
 
-FAIRModel(name::String, node::FAIRNode) = FAIRModel(name, [node])
+FAIRModel(name::Symbol, node::FAIRNode) = FAIRModel(name, [node])
 
 # Convenience: single-node model from raw parameters
 function FAIRModel(;
-    name::String = "org",
+    name::Symbol = :org,
     tef,
     vulnerability,
     primary_severity,
