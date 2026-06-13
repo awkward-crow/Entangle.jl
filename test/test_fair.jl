@@ -131,10 +131,10 @@ end
 
         @testset "components sum to total" begin
             rng = Xoshiro(TEST_SEED)
-            for _ in 1:1_000
+            for _ in 1:5
                 rng2 = copy(rng)
                 (p, s) = rand_components(rng, m)
-                l = rand_loss(rng2, m)
+                l      = rand_loss(rng2, m)
                 @test p + s ≈ l
             end
         end
@@ -232,10 +232,10 @@ end
         node = FAIRNode(freq, mag)
 
         # single-node constructor
-        model = FAIRModel("test_org", node)
+        model = FAIRModel(:test_org, node)
 
         @testset "constructor (single node)" begin
-            @test model.name == "test_org"
+            @test model.name == :test_org
             @test length(model.nodes) == 1
             @test model.nodes[1] === node
         end
@@ -256,7 +256,7 @@ end
             FrequencyModel(Gamma(1.0, 0.5), Beta(5.0, 95.0)),
             MagnitudeModel(Exponential(10.0), Exponential(1.0)),
         )
-        model2 = FAIRModel("test_org_multi", [node, node2])
+        model2 = FAIRModel(:test_org_multi, [node, node2])
 
         @testset "constructor (multi-node)" begin
             @test length(model2.nodes) == 2

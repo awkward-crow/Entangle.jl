@@ -1,7 +1,7 @@
 @testset "simulate" begin
     freq  = FrequencyModel(Gamma(4.0, 0.5), Beta(25.0, 75.0))
     mag   = MagnitudeModel(Exponential(2.0), Exponential(1.0))
-    model = FAIRModel("test", FAIRNode(freq, mag))
+    model = FAIRModel(:test, FAIRNode(freq, mag))
 
     @testset "returns Vector{Float64}" begin
         losses = simulate(model; n_scenarios = 500, seed = TEST_SEED)
@@ -22,7 +22,7 @@ end
     # mean_loss = 2.0 + 1.0 = 3.0  →  AEL = 1.5
     freq  = FrequencyModel(Gamma(4.0, 0.5), Beta(25.0, 75.0))
     mag   = MagnitudeModel(Exponential(2.0), Exponential(1.0))
-    model = FAIRModel("test_ael", FAIRNode(freq, mag))
+    model = FAIRModel(:test, FAIRNode(freq, mag))
 
     losses = simulate(model; n_scenarios = 200_000, seed = TEST_SEED)
     @test ael(losses) ≈ 1.5  atol=0.05
@@ -31,7 +31,7 @@ end
 @testset "pml" begin
     freq  = FrequencyModel(Gamma(4.0, 0.5), Beta(25.0, 75.0))
     mag   = MagnitudeModel(Exponential(2.0), Exponential(1.0))
-    model = FAIRModel("test_pml", FAIRNode(freq, mag))
+    model = FAIRModel(:test, FAIRNode(freq, mag))
     losses = simulate(model; n_scenarios = 100_000, seed = TEST_SEED)
 
     @testset "monotone in return period" begin
@@ -53,7 +53,7 @@ end
 @testset "exceedance_probability" begin
     freq  = FrequencyModel(Gamma(4.0, 0.5), Beta(25.0, 75.0))
     mag   = MagnitudeModel(Exponential(2.0), Exponential(1.0))
-    model = FAIRModel("test_ep", FAIRNode(freq, mag))
+    model = FAIRModel(:test, FAIRNode(freq, mag))
     losses = simulate(model; n_scenarios = 50_000, seed = TEST_SEED)
 
     ep = exceedance_probability(losses)
