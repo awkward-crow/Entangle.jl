@@ -1,5 +1,7 @@
 # Entangle.jl
 
+[![CI](https://github.com/awkward-crow/Entangle.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/awkward-crow/Entangle.jl/actions/workflows/ci.yml)
+
 **Cyber risk quantification based on the FAIR framework.**
 
 Models the annual loss distribution for a single organisation as a compound Poisson process with a spliced severity distribution combining expert-elicited body distributions and a Generalised Pareto tail. It produces exceedance probability curves and PML estimates in standard catastrophe modelling format.
