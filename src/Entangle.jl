@@ -17,13 +17,14 @@ include("fair/FAIRModel.jl")
 
 include("Metrics.jl")
 
-# Re-export common Distributions.jl types so users only need `using Entangle`
-export Beta, Gamma, LogNormal, Exponential, Normal, Uniform, Poisson
+include("portfolio/FactorModel.jl")
 
 export GPD, PERT, Metalog, SplicedSeverity
 export FrequencyModel, rand_rate, rand_count, mean_rate
 export MagnitudeModel, rand_components, rand_loss, mean_loss
 export FAIRNode, FAIRModel, rand_annual_loss, mean_annual_loss, simulate
 export ael, pml, EPCurve, exceedance_probability, STANDARD_RETURN_PERIODS
+export FactorLoadings, norm_sq, idiosyncratic_weight
+export PortfolioLoadings, add!
 
 end # module Entangle
