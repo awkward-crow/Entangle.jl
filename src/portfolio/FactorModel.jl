@@ -25,8 +25,8 @@ function FactorLoadings(; kwargs...)
 end
 
 Base.getindex(fl::FactorLoadings, k::Symbol) = get(fl.loadings, k, 0.0)
-Base.keys(fl::FactorLoadings)                = keys(fl.loadings)
 Base.isempty(fl::FactorLoadings)             = isempty(fl.loadings)
+Base.names(fl::FactorLoadings)               = keys(fl.loadings)
 
 norm_sq(fl::FactorLoadings) = sum(v^2 for v in values(fl.loadings); init = 0.0)
 
@@ -59,3 +59,28 @@ Base.getindex(pl::PortfolioLoadings, name::Symbol) = pl.loadings[name]
 Base.haskey(pl::PortfolioLoadings, name::Symbol)   = haskey(pl.loadings, name)
 Base.keys(pl::PortfolioLoadings)                   = keys(pl.loadings)
 Base.length(pl::PortfolioLoadings)                 = length(pl.loadings)
+
+# ---- loading_matrix ----------------------------------------------------------
+
+"""
+    loading_matrix(factor_loadings) -> Matrix{Float64}
+
+Construct an `(n × K)` factor loading matrix from a vector of `FactorLoadings`,
+where `n` is the number of organisations and `K` is the number of distinct
+factors across all entries. Factors are sorted for a stable column ordering.
+"""
+function loading_matrix(factor_loadings::Vector{FactorLoadings})
+    factor_names = Set{Symbol}()
+    for loadings in factor_loadings
+        union!(factor_names, names(loadings))
+    end
+    factors    = sort!(collect(factor_names))
+    factor_idx = Dict(f => i for (i, f) in enumerate(factors))
+    β          = zeros(length(factor_loadings), length(factors))
+    for (i, loadings) in enumerate(factor_loadings)
+        for f in names(loadings)
+            β[i, factor_idx[f]] = loadings[f]
+        end
+    end
+    return β
+end

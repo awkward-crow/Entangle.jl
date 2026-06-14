@@ -1,19 +1,11 @@
 abstract type FactorCopula end
 
 """
-    StudentTFactorCopula(ν = 4)
+    rand_uniforms(rng, copula, β) -> Vector{Float64}
 
-Student-t factor copula with `ν` degrees of freedom. 
+Sample `n` dependent U[0,1] random variables from the copula with
+`(n × K)` factor loading matrix `β`.
 
-Lower `ν` produces stronger tail dependence.
+Implement this method for each concrete `FactorCopula` subtype.
 """
-struct StudentTFactorCopula <: FactorCopula
-    ν :: Float64
-end
-
-StudentTFactorCopula(; ν::Real = 4.0) = StudentTFactorCopula(Float64(ν))
-
-function StudentTFactorCopula(ν::Real)
-    ν > 0 || throw(ArgumentError("degrees of freedom ν must be > 0, got $ν"))
-    return StudentTFactorCopula(Float64(ν))
-end
+function rand_uniforms end

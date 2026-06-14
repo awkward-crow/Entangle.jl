@@ -29,10 +29,24 @@ end
 
 Base.length(portfolio::Portfolio)               = length(portfolio.models)
 Base.haskey(portfolio::Portfolio, name::Symbol) = haskey(portfolio.models, name)
-Base.keys(portfolio::Portfolio)                 = keys(portfolio.models)
+Base.names(portfolio::Portfolio)                = keys(portfolio.models)
 
 has_loss_samples(portfolio::Portfolio, name::Symbol) =
     haskey(portfolio.sorted_loss_samples, name)
+
+"""
+    empirical_quantile(sorted_samples, u) -> Float64
+
+Return the `u`-quantile of a pre-sorted sample vector by linear interpolation.
+"""
+function empirical_quantile(sorted_samples::Vector{Float64}, u::Float64)
+    n  = length(sorted_samples)
+    ix = clamp(u, 0.0, 1.0) * (n - 1) + 1.0
+    lo = clamp(floor(Int, ix), 1, n)
+    hi = min(lo + 1, n)
+    t  = ix - lo
+    return sorted_samples[lo] + t * (sorted_samples[hi] - sorted_samples[lo])
+end
 
 # ---- Loss sample calculation -------------------------------------------------
 
@@ -65,8 +79,46 @@ Compute sorted loss samples for every organisation in `portfolio`. Each
 organisation's effective seed is `seed ⊻ hash(name)`.
 """
 function calculate_losses!(portfolio::Portfolio; n_scenarios::Int, seed::Integer)
-    for name in keys(portfolio.models)
+    for name in names(portfolio)
         calculate_loss!(portfolio, name; n_scenarios = n_scenarios, seed = seed)
     end
     return portfolio
+end
+
+# ---- Portfolio simulation ----------------------------------------------------
+
+"""
+    rand_portfolio_losses(rng, portfolio, loadings, copula; n_scenarios) -> Vector{Float64}
+
+Draw `n_scenarios` aggregate portfolio losses via the factor copula.
+
+Organisation names are sorted before simulation so the RNG sequence is stable
+regardless of insertion order. Organisations absent from `loadings` are treated
+as purely idiosyncratic (zero factor exposures).
+"""
+function rand_portfolio_losses(
+    rng       :: AbstractRNG,
+    portfolio :: Portfolio,
+    loadings  :: PortfolioLoadings,
+    copula    :: FactorCopula;
+    n_scenarios :: Int,
+)
+    org_names = sort!(collect(names(portfolio)))
+
+    for name in org_names
+        has_loss_samples(portfolio, name) ||
+            throw(ArgumentError("no loss samples for :$name — call calculate_losses! first"))
+    end
+
+    factor_loadings = [haskey(loadings, n) ? loadings[n] : FactorLoadings() for n in org_names]
+    β               = loading_matrix(factor_loadings)
+    n_orgs          = length(org_names)
+    losses          = Vector{Float64}(undef, n_scenarios)
+
+    for s in 1:n_scenarios
+        U         = rand_uniforms(rng, copula, β)
+        losses[s] = sum(empirical_quantile(portfolio.sorted_loss_samples[org_names[i]], U[i]) for i in 1:n_orgs)
+    end
+
+    return losses
 end
