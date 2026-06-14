@@ -3,8 +3,7 @@ abstract type FactorCopula end
 """
     StudentTFactorCopula(ν = 4)
 
-Student-t factor copula with `ν` degrees of freedom. Carries only `ν`; factor
-loadings are held in the `PortfolioLoadings` passed to `simulate_portfolio`.
+Student-t factor copula with `ν` degrees of freedom. 
 
 Lower `ν` produces stronger tail dependence.
 """
