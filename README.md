@@ -46,11 +46,11 @@ org = FAIRModel(
     tef = Metalog(quantiles = [0.10 => 1.0, 0.50 => 3.0, 0.90 => 6.0], lower = 0),
     vulnerability = Beta(2.0, 8.0),
     primary_severity = SplicedSeverity(
-        body      = Metalog(quantiles = [0.10 => 50_000, 0.50 => 200_000, 0.90 => 800_000]),
+        body      = Metalog(quantiles = [0.10 => 50_000, 0.50 => 200_000, 0.90 => 800_000], lower = 0),
         threshold = 1_000_000,
         gpd       = GPD(400_000, 0.5)
     ),
-    secondary_severity    = Metalog(quantiles = [0.10 => 0.05, 0.50 => 0.30, 0.90 => 0.80]),
+    secondary_severity    = Metalog(quantiles = [0.10 => 0.05, 0.50 => 0.30, 0.90 => 0.80], lower = 0),
     secondary_as_fraction = true,
 )
 
@@ -77,11 +77,11 @@ for (name, aws, rs) in [(:acme, 0.4, 0.3), (:globex, 0.6, 0.0), (:initech, 0.3, 
         tef                = Metalog(quantiles = [0.10 => 0.5, 0.50 => 1.5, 0.90 => 4.0], lower = 0),
         vulnerability      = Beta(2.0, 8.0),
         primary_severity   = SplicedSeverity(
-            body      = Metalog(quantiles = [0.10 => 50_000, 0.50 => 200_000, 0.90 => 800_000]),
+            body      = Metalog(quantiles = [0.10 => 50_000, 0.50 => 200_000, 0.90 => 800_000], lower = 0),
             threshold = 1_000_000,
             gpd       = GPD(400_000, 0.5)
         ),
-        secondary_severity    = Metalog(quantiles = [0.10 => 0.05, 0.50 => 0.30, 0.90 => 0.80]),
+        secondary_severity    = Metalog(quantiles = [0.10 => 0.05, 0.50 => 0.30, 0.90 => 0.80], lower = 0),
         secondary_as_fraction = true,
     )
     add!(portfolio, model)
