@@ -79,8 +79,16 @@ Compute sorted loss samples for every organisation in `portfolio`. Each
 organisation's effective seed is `seed ⊻ hash(name)`.
 """
 function calculate_losses!(portfolio::Portfolio; n_scenarios::Int, seed::Integer)
-    for name in names(portfolio)
-        calculate_loss!(portfolio, name; n_scenarios = n_scenarios, seed = seed)
+    org_names = collect(names(portfolio))
+    results   = Vector{Vector{Float64}}(undef, length(org_names))
+    Threads.@threads for i in eachindex(org_names)
+        name       = org_names[i]
+        org_seed   = xor(UInt64(seed), hash(name))
+        rng        = Xoshiro(org_seed)
+        results[i] = sort!([rand_annual_loss(rng, portfolio.models[name]) for _ in 1:n_scenarios])
+    end
+    for (i, name) in enumerate(org_names)
+        portfolio.sorted_loss_samples[name] = results[i]
     end
     return portfolio
 end
@@ -88,16 +96,20 @@ end
 # ---- Portfolio simulation ----------------------------------------------------
 
 """
-    rand_portfolio_losses(rng, portfolio, loadings, copula; n_scenarios) -> Vector{Float64}
+    rand_portfolio_losses(seed, portfolio, loadings, copula; n_scenarios) -> Vector{Float64}
 
 Draw `n_scenarios` aggregate portfolio losses via the factor copula.
 
 Organisation names are sorted before simulation so the RNG sequence is stable
 regardless of insertion order. Organisations absent from `loadings` are treated
 as purely idiosyncratic (zero factor exposures).
+
+Each scenario uses an independent `Xoshiro` RNG seeded with `seed ⊻ s`, so
+scenarios are computed in parallel and results are reproducible regardless of
+thread count.
 """
 function rand_portfolio_losses(
-    rng       :: AbstractRNG,
+    seed      :: Integer,
     portfolio :: Portfolio,
     loadings  :: PortfolioLoadings,
     copula    :: FactorCopula;
@@ -115,7 +127,8 @@ function rand_portfolio_losses(
     n_orgs          = length(org_names)
     losses          = Vector{Float64}(undef, n_scenarios)
 
-    for s in 1:n_scenarios
+    Threads.@threads for s in 1:n_scenarios
+        rng       = Xoshiro(xor(UInt64(seed), UInt64(s)))
         U         = rand_uniforms(rng, copula, β)
         losses[s] = sum(empirical_quantile(portfolio.sorted_loss_samples[org_names[i]], U[i]) for i in 1:n_orgs)
     end

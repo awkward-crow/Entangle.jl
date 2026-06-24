@@ -94,7 +94,8 @@ copula = StudentTFactorCopula(ν = 4)
 n      = 100_000
 
 # Correlated via Student-t factor copula
-correlated = rand_portfolio_losses(Xoshiro(42), portfolio, loadings, copula; n_scenarios = n)
+seed       = 103357224
+correlated = rand_portfolio_losses(seed, portfolio, loadings, copula; n_scenarios = n)
 
 # Under independence: independent draws per organisation, summed
 independent = sum(

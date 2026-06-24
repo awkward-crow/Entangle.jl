@@ -236,26 +236,26 @@ end
         p = Portfolio()
         add!(p, _simple_model(:acme))
         @test_throws ArgumentError rand_portfolio_losses(
-            Xoshiro(TEST_SEED), p, PortfolioLoadings(), copula; n_scenarios = 100
+            TEST_SEED, p, PortfolioLoadings(), copula; n_scenarios = 100
         )
     end
 
     @testset "returns correct length" begin
         p, pl = _portfolio()
-        losses = rand_portfolio_losses(Xoshiro(TEST_SEED), p, pl, copula; n_scenarios = 200)
+        losses = rand_portfolio_losses(TEST_SEED, p, pl, copula; n_scenarios = 200)
         @test length(losses) == 200
     end
 
     @testset "non-negative" begin
         p, pl = _portfolio()
-        losses = rand_portfolio_losses(Xoshiro(TEST_SEED), p, pl, copula; n_scenarios = 500)
+        losses = rand_portfolio_losses(TEST_SEED, p, pl, copula; n_scenarios = 500)
         @test all(>=(0.0), losses)
     end
 
     @testset "reproducible" begin
         p, pl = _portfolio()
-        l1 = rand_portfolio_losses(Xoshiro(TEST_SEED), p, pl, copula; n_scenarios = 200)
-        l2 = rand_portfolio_losses(Xoshiro(TEST_SEED), p, pl, copula; n_scenarios = 200)
+        l1 = rand_portfolio_losses(TEST_SEED, p, pl, copula; n_scenarios = 200)
+        l2 = rand_portfolio_losses(TEST_SEED, p, pl, copula; n_scenarios = 200)
         @test l1 == l2
     end
 
@@ -274,8 +274,8 @@ end
         add!(pl, :acme,   FactorLoadings(aws = 0.4))
         add!(pl, :globex, FactorLoadings(aws = 0.3))
 
-        l1 = rand_portfolio_losses(Xoshiro(TEST_SEED), p1, pl, copula; n_scenarios = 200)
-        l2 = rand_portfolio_losses(Xoshiro(TEST_SEED), p2, pl, copula; n_scenarios = 200)
+        l1 = rand_portfolio_losses(TEST_SEED, p1, pl, copula; n_scenarios = 200)
+        l2 = rand_portfolio_losses(TEST_SEED, p2, pl, copula; n_scenarios = 200)
         @test l1 == l2
     end
 
@@ -284,7 +284,7 @@ end
         add!(p, _simple_model(:acme))
         calculate_losses!(p; n_scenarios = 500, seed = TEST_SEED)
         losses = rand_portfolio_losses(
-            Xoshiro(TEST_SEED), p, PortfolioLoadings(), copula; n_scenarios = 200
+            TEST_SEED, p, PortfolioLoadings(), copula; n_scenarios = 200
         )
         @test length(losses) == 200
         @test all(>=(0.0), losses)
