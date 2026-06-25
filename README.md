@@ -35,6 +35,11 @@ Models the annual loss distribution for a single organisation as a compound Pois
 - `StudentTFactorCopula` — Student-t factor copula parameterised by degrees of freedom `ν`; lower `ν` produces stronger tail dependence
 - `rand_portfolio_losses` — draws aggregate portfolio losses via the factor copula; organisations absent from loadings are treated as purely idiosyncratic
 
+**Scenario catalogue** (`src/scenarios/`)
+- `FAIRNode` — individual risk node within a `FAIRModel`; carries a `name` and an optional `factor` symbol that links it to a systemic scenario (e.g. `factor = :aws`)
+- `ScenarioExposures` — per-organisation Bernoulli hit probabilities for named systemic scenarios; `insert!` adds new entries (throws on duplicate), `update!` overwrites existing ones (returns old values)
+- `rand_scenario_losses` — Mode 2 engine: for each sample, nodes tagged with the active scenario fire with the organisation's hit probability; all other nodes fire at baseline; operates at node level without pre-computed marginal samples
+
 ---
 
 ## Examples
@@ -109,6 +114,47 @@ println("1-in-200 PML — independent: £$(round(pml(independent, 200) / 1e6, di
 # assumption would miss — the defining exposure in cyber portfolio underwriting.
 ```
 
+### Scenario losses (Mode 2)
+
+```julia
+using Entangle, Distributions
+
+# Build a node tagged to the :aws factor — the scenario engine fires it
+# with each org's hit probability when simulating an AWS outage scenario
+aws_node(name) = FAIRNode(
+    FrequencyModel(
+        Metalog(quantiles = [0.10 => 0.2, 0.50 => 0.8, 0.90 => 2.0], lower = 0),
+        Beta(2.0, 8.0),
+    ),
+    MagnitudeModel(
+        SplicedSeverity(
+            body      = Metalog(quantiles = [0.10 => 50_000, 0.50 => 200_000, 0.90 => 800_000], lower = 0),
+            threshold = 1_000_000,
+            gpd       = GPD(400_000, 0.5),
+        ),
+        Metalog(quantiles = [0.10 => 0.05, 0.50 => 0.30, 0.90 => 0.80], lower = 0);
+        secondary_as_fraction = true,
+    );
+    name   = name,
+    factor = :aws,
+)
+
+portfolio = Portfolio()
+for name in (:acme, :globex, :initech)
+    add!(portfolio, FAIRModel(name, aws_node(name)))
+end
+
+exposures = ScenarioExposures()
+insert!(exposures, :acme,    aws = 0.7)
+insert!(exposures, :globex,  aws = 0.3)
+insert!(exposures, :initech, aws = 0.5)
+
+losses = rand_scenario_losses(42, :aws, exposures, portfolio; n_samples = 100_000)
+
+println("Scenario AEL:      £$(round(ael(losses) / 1e3))k")
+println("Scenario 1-in-100: £$(round(pml(losses, 100) / 1e6, digits = 1))m")
+```
+
 ---
 
 ## Dependencies
@@ -122,7 +168,7 @@ Julia 1.10 or later. Key packages: `Distributions.jl`, `Statistics` (stdlib).
 - [x] Phase 1 — Distributions
 - [x] Phase 2 — Single-organisation FAIR model and metrics
 - [x] Phase 3 — Portfolio simulation and copula
-- [ ] Phase 4 — Scenario catalogue
+- [x] Phase 4 — Scenario catalogue
 - [ ] Phase 5 — Bayesian calibration
 
 ---
