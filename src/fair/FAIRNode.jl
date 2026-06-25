@@ -1,5 +1,5 @@
 """
-    FAIRNode(frequency, magnitude)
+    FAIRNode(frequency, magnitude; name = :unnamed, factor = nothing)
 
 One risk scenario in the FAIR hierarchy. Combines a `FrequencyModel` and a
 `MagnitudeModel` to produce realisations of annual aggregate loss:
@@ -7,12 +7,28 @@ One risk scenario in the FAIR hierarchy. Combines a `FrequencyModel` and a
     S = ∑_{i=1}^{N} L_i,   N ~ Poisson(λV)
 
 where N is drawn from the frequency model and each L_i is drawn independently
-from the magnitude model. 
+from the magnitude model.
+
+`name` labels the node within its model; `factor` tags it to a systemic risk
+factor (e.g. `:aws`, `:ransomware`). The scenario engine activates only nodes
+whose `factor` matches the scenario; nodes with `factor = nothing` are
+idiosyncratic and always run at baseline.
 """
 
 struct FAIRNode{F<:FrequencyModel, M<:MagnitudeModel}
-    frequency::F
-    magnitude::M
+    name      :: Symbol
+    factor    :: Union{Symbol, Nothing}
+    frequency :: F
+    magnitude :: M
+end
+
+function FAIRNode(
+    frequency :: FrequencyModel,
+    magnitude :: MagnitudeModel;
+    name   :: Symbol                 = :unnamed,
+    factor :: Union{Symbol, Nothing} = nothing,
+)
+    return FAIRNode(name, factor, frequency, magnitude)
 end
 
 Distributions.partype(node::FAIRNode) = partype(node.magnitude)

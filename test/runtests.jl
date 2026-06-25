@@ -14,3 +14,4 @@ const TEST_SEED = _parse_seed(ARGS, 1033142)
 @testset "FAIR"          begin include("test_fair.jl")          end
 @testset "Metrics"       begin include("test_metrics.jl")       end
 @testset "Portfolio"     begin include("test_portfolio.jl")     end
+@testset "Scenarios"     begin include("test_scenarios.jl")     end

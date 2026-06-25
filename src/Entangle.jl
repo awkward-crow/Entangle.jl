@@ -22,6 +22,8 @@ include("portfolio/Copula.jl")
 include("portfolio/StudentTFactorCopula.jl")
 include("portfolio/Portfolio.jl")
 
+include("scenarios/Scenario.jl")
+
 export GPD, PERT, Metalog, SplicedSeverity
 export FrequencyModel, rand_rate, rand_count, mean_rate
 export MagnitudeModel, rand_components, rand_loss, mean_loss
@@ -32,5 +34,6 @@ export PortfolioLoadings, add!, loading_matrix
 export Portfolio, has_loss_samples, calculate_loss!, calculate_losses!, empirical_quantile
 export FactorCopula, StudentTFactorCopula, rand_uniforms
 export rand_portfolio_losses
+export ScenarioExposures, update!, rand_scenario_losses
 
 end # module Entangle
