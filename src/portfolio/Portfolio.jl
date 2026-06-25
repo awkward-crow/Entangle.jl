@@ -3,10 +3,10 @@
 
 Mutable collection of single-organisation `FAIRModel`s and their pre-computed
 sorted loss samples. Samples must be computed before portfolio simulation via
-`calculate_losses!`.
+`calculate_marginal_losses!`.
 
     add!(portfolio, model)
-    calculate_losses!(portfolio; n_scenarios, seed)
+    calculate_marginal_losses!(portfolio; n_scenarios, seed)
 """
 mutable struct Portfolio
     models              :: Dict{Symbol, FAIRModel}
@@ -51,13 +51,13 @@ end
 # ---- Loss sample calculation -------------------------------------------------
 
 """
-    calculate_loss!(portfolio, name; n_scenarios, seed) -> portfolio
+    calculate_marginal_loss!(portfolio, name; n_scenarios, seed) -> portfolio
 
 Simulate `n_scenarios` annual losses for organisation `name` and store the
 sorted result. The effective RNG seed is `seed ⊻ hash(name)`, so the result
 is stable regardless of portfolio composition.
 """
-function calculate_loss!(
+function calculate_marginal_loss!(
     portfolio   :: Portfolio,
     name        :: Symbol;
     n_scenarios :: Int,
@@ -73,12 +73,12 @@ function calculate_loss!(
 end
 
 """
-    calculate_losses!(portfolio; n_scenarios, seed) -> portfolio
+    calculate_marginal_losses!(portfolio; n_scenarios, seed) -> portfolio
 
 Compute sorted loss samples for every organisation in `portfolio`. Each
 organisation's effective seed is `seed ⊻ hash(name)`.
 """
-function calculate_losses!(portfolio::Portfolio; n_scenarios::Int, seed::Integer)
+function calculate_marginal_losses!(portfolio::Portfolio; n_scenarios::Int, seed::Integer)
     org_names = collect(names(portfolio))
     results   = Vector{Vector{Float64}}(undef, length(org_names))
     Threads.@threads for i in eachindex(org_names)
@@ -119,7 +119,7 @@ function rand_portfolio_losses(
 
     for name in org_names
         has_loss_samples(portfolio, name) ||
-            throw(ArgumentError("no loss samples for :$name — call calculate_losses! first"))
+            throw(ArgumentError("no loss samples for :$name — call calculate_marginal_losses! first"))
     end
 
     factor_loadings = [haskey(loadings, n) ? loadings[n] : FactorLoadings() for n in org_names]

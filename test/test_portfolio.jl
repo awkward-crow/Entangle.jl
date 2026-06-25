@@ -148,21 +148,21 @@ end
     @testset "add! invalidates samples" begin
         p = Portfolio()
         add!(p, _simple_model(:acme))
-        calculate_loss!(p, :acme; n_scenarios = 100, seed = TEST_SEED)
+        calculate_marginal_loss!(p, :acme; n_scenarios = 100, seed = TEST_SEED)
         @test has_loss_samples(p, :acme)
         add!(p, _simple_model(:acme))
         @test !has_loss_samples(p, :acme)
     end
 
-    @testset "calculate_loss! unknown name" begin
+    @testset "calculate_marginal_loss! unknown name" begin
         p = Portfolio()
-        @test_throws ArgumentError calculate_loss!(p, :unknown; n_scenarios = 100, seed = TEST_SEED)
+        @test_throws ArgumentError calculate_marginal_loss!(p, :unknown; n_scenarios = 100, seed = TEST_SEED)
     end
 
-    @testset "calculate_loss! stores sorted samples" begin
+    @testset "calculate_marginal_loss! stores sorted samples" begin
         p = Portfolio()
         add!(p, _simple_model(:acme))
-        calculate_loss!(p, :acme; n_scenarios = 1_000, seed = TEST_SEED)
+        calculate_marginal_loss!(p, :acme; n_scenarios = 1_000, seed = TEST_SEED)
         s = p.sorted_loss_samples[:acme]
         @test length(s)    == 1_000
         @test issorted(s)
@@ -172,21 +172,21 @@ end
     @testset "seed stability" begin
         p1 = Portfolio()
         add!(p1, _simple_model(:acme))
-        calculate_loss!(p1, :acme; n_scenarios = 500, seed = TEST_SEED)
+        calculate_marginal_loss!(p1, :acme; n_scenarios = 500, seed = TEST_SEED)
 
         p2 = Portfolio()
         add!(p2, _simple_model(:acme))
         add!(p2, _simple_model(:globex))
-        calculate_loss!(p2, :acme; n_scenarios = 500, seed = TEST_SEED)
+        calculate_marginal_loss!(p2, :acme; n_scenarios = 500, seed = TEST_SEED)
 
         @test p1.sorted_loss_samples[:acme] == p2.sorted_loss_samples[:acme]
     end
 
-    @testset "calculate_losses!" begin
+    @testset "calculate_marginal_losses!" begin
         p = Portfolio()
         add!(p, _simple_model(:acme))
         add!(p, _simple_model(:globex))
-        calculate_losses!(p; n_scenarios = 500, seed = TEST_SEED)
+        calculate_marginal_losses!(p; n_scenarios = 500, seed = TEST_SEED)
         @test has_loss_samples(p, :acme)
         @test has_loss_samples(p, :globex)
     end
@@ -225,7 +225,7 @@ end
         p = Portfolio()
         add!(p, _simple_model(:acme))
         add!(p, _simple_model(:globex))
-        calculate_losses!(p; n_scenarios = 2_000, seed = TEST_SEED)
+        calculate_marginal_losses!(p; n_scenarios = 2_000, seed = TEST_SEED)
         pl = PortfolioLoadings()
         add!(pl, :acme,   FactorLoadings(aws = 0.4, ransomware = 0.3))
         add!(pl, :globex, FactorLoadings(aws = 0.5))
@@ -263,12 +263,12 @@ end
         p1 = Portfolio()
         add!(p1, _simple_model(:acme))
         add!(p1, _simple_model(:globex))
-        calculate_losses!(p1; n_scenarios = 500, seed = TEST_SEED)
+        calculate_marginal_losses!(p1; n_scenarios = 500, seed = TEST_SEED)
 
         p2 = Portfolio()
         add!(p2, _simple_model(:globex))
         add!(p2, _simple_model(:acme))
-        calculate_losses!(p2; n_scenarios = 500, seed = TEST_SEED)
+        calculate_marginal_losses!(p2; n_scenarios = 500, seed = TEST_SEED)
 
         pl = PortfolioLoadings()
         add!(pl, :acme,   FactorLoadings(aws = 0.4))
@@ -282,7 +282,7 @@ end
     @testset "absent loadings treated as idiosyncratic" begin
         p = Portfolio()
         add!(p, _simple_model(:acme))
-        calculate_losses!(p; n_scenarios = 500, seed = TEST_SEED)
+        calculate_marginal_losses!(p; n_scenarios = 500, seed = TEST_SEED)
         losses = rand_portfolio_losses(
             TEST_SEED, p, PortfolioLoadings(), copula; n_scenarios = 200
         )

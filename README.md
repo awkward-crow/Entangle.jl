@@ -93,7 +93,7 @@ for (name, aws, rs) in [(:acme, 0.4, 0.3), (:globex, 0.6, 0.0), (:initech, 0.3, 
     add!(loadings, name, FactorLoadings(aws = aws, ransomware = rs))
 end
 
-calculate_losses!(portfolio; n_scenarios = 100_000, seed = 42)
+calculate_marginal_losses!(portfolio; n_scenarios = 100_000, seed = 42)
 
 copula = StudentTFactorCopula(ν = 4)
 n      = 100_000
