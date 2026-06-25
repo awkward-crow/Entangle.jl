@@ -217,7 +217,7 @@ end
 
 end
 
-@testset "rand_portfolio_losses" begin
+@testset "rand_portfolio_loss" begin
 
     copula = StudentTFactorCopula()
 
@@ -235,27 +235,34 @@ end
     @testset "error when samples missing" begin
         p = Portfolio()
         add!(p, _simple_model(:acme))
-        @test_throws ArgumentError rand_portfolio_losses(
-            TEST_SEED, p, PortfolioLoadings(), copula; n_scenarios = 100
+        @test_throws ArgumentError rand_portfolio_loss(
+            TEST_SEED, PortfolioLoadings(), copula, p, 100
         )
     end
 
     @testset "returns correct length" begin
         p, pl = _portfolio()
-        losses = rand_portfolio_losses(TEST_SEED, p, pl, copula; n_scenarios = 200)
+        losses = rand_portfolio_loss(TEST_SEED, pl, copula, p, 200)
         @test length(losses) == 200
+    end
+
+    @testset "single draw returns scalar" begin
+        p, pl = _portfolio()
+        loss = rand_portfolio_loss(TEST_SEED, pl, copula, p)
+        @test loss isa Float64
+        @test loss >= 0.0
     end
 
     @testset "non-negative" begin
         p, pl = _portfolio()
-        losses = rand_portfolio_losses(TEST_SEED, p, pl, copula; n_scenarios = 500)
+        losses = rand_portfolio_loss(TEST_SEED, pl, copula, p, 500)
         @test all(>=(0.0), losses)
     end
 
     @testset "reproducible" begin
         p, pl = _portfolio()
-        l1 = rand_portfolio_losses(TEST_SEED, p, pl, copula; n_scenarios = 200)
-        l2 = rand_portfolio_losses(TEST_SEED, p, pl, copula; n_scenarios = 200)
+        l1 = rand_portfolio_loss(TEST_SEED, pl, copula, p, 200)
+        l2 = rand_portfolio_loss(TEST_SEED, pl, copula, p, 200)
         @test l1 == l2
     end
 
@@ -274,8 +281,8 @@ end
         add!(pl, :acme,   FactorLoadings(aws = 0.4))
         add!(pl, :globex, FactorLoadings(aws = 0.3))
 
-        l1 = rand_portfolio_losses(TEST_SEED, p1, pl, copula; n_scenarios = 200)
-        l2 = rand_portfolio_losses(TEST_SEED, p2, pl, copula; n_scenarios = 200)
+        l1 = rand_portfolio_loss(TEST_SEED, pl, copula, p1, 200)
+        l2 = rand_portfolio_loss(TEST_SEED, pl, copula, p2, 200)
         @test l1 == l2
     end
 
@@ -283,10 +290,43 @@ end
         p = Portfolio()
         add!(p, _simple_model(:acme))
         calculate_marginal_losses!(p; n_scenarios = 500, seed = TEST_SEED)
-        losses = rand_portfolio_losses(
-            TEST_SEED, p, PortfolioLoadings(), copula; n_scenarios = 200
-        )
+        losses = rand_portfolio_loss(TEST_SEED, PortfolioLoadings(), copula, p, 200)
         @test length(losses) == 200
+        @test all(>=(0.0), losses)
+    end
+
+    @testset "no-seed form returns correct length" begin
+        p, pl = _portfolio()
+        losses = rand_portfolio_loss(pl, copula, p, 100)
+        @test length(losses) == 100
+        @test all(>=(0.0), losses)
+    end
+
+    @testset "independent form returns correct length" begin
+        p, _ = _portfolio()
+        losses = rand_portfolio_loss(TEST_SEED, p, 200)
+        @test length(losses) == 200
+        @test all(>=(0.0), losses)
+    end
+
+    @testset "independent form single draw returns scalar" begin
+        p, _ = _portfolio()
+        loss = rand_portfolio_loss(TEST_SEED, p)
+        @test loss isa Float64
+        @test loss >= 0.0
+    end
+
+    @testset "independent form reproducible" begin
+        p, _ = _portfolio()
+        l1 = rand_portfolio_loss(TEST_SEED, p, 200)
+        l2 = rand_portfolio_loss(TEST_SEED, p, 200)
+        @test l1 == l2
+    end
+
+    @testset "independent no-seed form returns correct length" begin
+        p, _ = _portfolio()
+        losses = rand_portfolio_loss(p, 100)
+        @test length(losses) == 100
         @test all(>=(0.0), losses)
     end
 

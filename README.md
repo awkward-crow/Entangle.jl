@@ -33,7 +33,7 @@ Models the annual loss distribution for a single organisation as a compound Pois
 - `loading_matrix` — constructs the `(n × K)` factor loading matrix from a vector of `FactorLoadings`
 - `Portfolio` — mutable collection of `FAIRModel`s with pre-computed sorted loss samples
 - `StudentTFactorCopula` — Student-t factor copula parameterised by degrees of freedom `ν`; lower `ν` produces stronger tail dependence
-- `rand_portfolio_losses` — draws aggregate portfolio losses via the factor copula; organisations absent from loadings are treated as purely idiosyncratic
+- `rand_portfolio_loss` — draws aggregate portfolio losses; with `loadings` and `copula` correlates losses via the factor copula, without draws each organisation independently from its marginal; returns a scalar with no `n_samples` argument, a vector otherwise
 
 **Scenario catalogue** (`src/scenarios/`)
 - `FAIRNode` — individual risk node within a `FAIRModel`; carries a `name` and an optional `factor` symbol that links it to a systemic scenario (e.g. `factor = :aws`)
@@ -95,18 +95,14 @@ end
 
 calculate_marginal_losses!(portfolio; n_scenarios = 100_000, seed = 42)
 
+
+seed = 103357224
+n = 100_000
+
+independent = rand_portfolio_loss(seed, portfolio, n)
+
 copula = StudentTFactorCopula(ν = 4)
-n      = 100_000
-
-# Correlated via Student-t factor copula
-seed       = 103357224
-correlated = rand_portfolio_losses(seed, portfolio, loadings, copula; n_scenarios = n)
-
-# Under independence: independent draws per organisation, summed
-independent = sum(
-    simulate(portfolio.models[name]; n_scenarios = n, seed = i)
-    for (i, name) in enumerate(sort!(collect(names(portfolio))))
-)
+correlated  = rand_portfolio_loss(seed, loadings, copula, portfolio, n)
 
 println("1-in-200 PML — correlated:  £$(round(pml(correlated,  200) / 1e6, digits = 1))m")
 println("1-in-200 PML — independent: £$(round(pml(independent, 200) / 1e6, digits = 1))m")

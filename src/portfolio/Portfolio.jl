@@ -96,25 +96,37 @@ end
 # ---- Portfolio simulation ----------------------------------------------------
 
 """
-    rand_portfolio_losses(seed, portfolio, loadings, copula; n_scenarios) -> Vector{Float64}
+    rand_portfolio_loss(seed, loadings, copula, portfolio, n_samples) -> Vector{Float64}
+    rand_portfolio_loss(seed, loadings, copula, portfolio)            -> Float64
+    rand_portfolio_loss(loadings, copula, portfolio, n_samples)       -> Vector{Float64}
+    rand_portfolio_loss(loadings, copula, portfolio)                  -> Float64
+    rand_portfolio_loss(seed, portfolio, n_samples)                   -> Vector{Float64}
+    rand_portfolio_loss(seed, portfolio)                              -> Float64
+    rand_portfolio_loss(portfolio, n_samples)                         -> Vector{Float64}
+    rand_portfolio_loss(portfolio)                                    -> Float64
 
-Draw `n_scenarios` aggregate portfolio losses via the factor copula.
+Draw aggregate portfolio losses. With `n_samples` returns a vector; without
+returns a single draw. The no-seed forms generate a seed from
+`Random.default_rng()`.
 
-Organisation names are sorted before simulation so the RNG sequence is stable
-regardless of insertion order. Organisations absent from `loadings` are treated
-as purely idiosyncratic (zero factor exposures).
+Forms with `loadings` and `copula` correlate losses via the factor copula.
+Forms without draw each organisation's loss independently from its marginal
+distribution. Both forms use the pre-computed sorted loss samples, so the
+marginal distributions are identical and the only difference is dependence
+structure — the direct comparison for accumulation risk.
 
-Each scenario uses an independent `Xoshiro` RNG seeded with `seed ⊻ s`, so
-scenarios are computed in parallel and results are reproducible regardless of
+Organisation names are sorted for RNG stability regardless of insertion order.
+Each sample uses an independent `Xoshiro` RNG seeded with `seed ⊻ s`, so
+samples are computed in parallel and results are reproducible regardless of
 thread count.
 """
-function rand_portfolio_losses(
+function rand_portfolio_loss(
     seed      :: Integer,
-    portfolio :: Portfolio,
     loadings  :: PortfolioLoadings,
-    copula    :: FactorCopula;
-    n_scenarios :: Int,
-)
+    copula    :: FactorCopula,
+    portfolio :: Portfolio,
+    n_samples :: Int,
+) :: Vector{Float64}
     org_names = sort!(collect(names(portfolio)))
 
     for name in org_names
@@ -125,13 +137,58 @@ function rand_portfolio_losses(
     factor_loadings = [haskey(loadings, n) ? loadings[n] : FactorLoadings() for n in org_names]
     β               = loading_matrix(factor_loadings)
     n_orgs          = length(org_names)
-    losses          = Vector{Float64}(undef, n_scenarios)
+    out             = Vector{Float64}(undef, n_samples)
 
-    Threads.@threads for s in 1:n_scenarios
-        rng       = Xoshiro(xor(UInt64(seed), UInt64(s)))
-        U         = rand_uniforms(rng, copula, β)
-        losses[s] = sum(empirical_quantile(portfolio.sorted_loss_samples[org_names[i]], U[i]) for i in 1:n_orgs)
+    Threads.@threads for s in 1:n_samples
+        rng    = Xoshiro(xor(UInt64(seed), UInt64(s)))
+        U      = rand_uniforms(rng, copula, β)
+        out[s] = sum(empirical_quantile(portfolio.sorted_loss_samples[org_names[i]], U[i]) for i in 1:n_orgs)
     end
 
-    return losses
+    return out
 end
+
+rand_portfolio_loss(
+    seed      :: Integer,
+    loadings  :: PortfolioLoadings,
+    copula    :: FactorCopula,
+    portfolio :: Portfolio,
+) :: Float64 = rand_portfolio_loss(seed, loadings, copula, portfolio, 1)[1]
+
+rand_portfolio_loss(loadings::PortfolioLoadings, copula::FactorCopula, portfolio::Portfolio, n_samples::Int) =
+    rand_portfolio_loss(rand(Random.default_rng(), UInt64), loadings, copula, portfolio, n_samples)
+
+rand_portfolio_loss(loadings::PortfolioLoadings, copula::FactorCopula, portfolio::Portfolio) =
+    rand_portfolio_loss(rand(Random.default_rng(), UInt64), loadings, copula, portfolio)
+
+function rand_portfolio_loss(
+    seed      :: Integer,
+    portfolio :: Portfolio,
+    n_samples :: Int,
+) :: Vector{Float64}
+    org_names = sort!(collect(names(portfolio)))
+
+    for name in org_names
+        has_loss_samples(portfolio, name) ||
+            throw(ArgumentError("no loss samples for :$name — call calculate_marginal_losses! first"))
+    end
+
+    n_orgs = length(org_names)
+    out    = Vector{Float64}(undef, n_samples)
+
+    Threads.@threads for s in 1:n_samples
+        rng    = Xoshiro(xor(UInt64(seed), UInt64(s)))
+        out[s] = sum(empirical_quantile(portfolio.sorted_loss_samples[org_names[i]], rand(rng)) for i in 1:n_orgs)
+    end
+
+    return out
+end
+
+rand_portfolio_loss(seed::Integer, portfolio::Portfolio) :: Float64 =
+    rand_portfolio_loss(seed, portfolio, 1)[1]
+
+rand_portfolio_loss(portfolio::Portfolio, n_samples::Int) =
+    rand_portfolio_loss(rand(Random.default_rng(), UInt64), portfolio, n_samples)
+
+rand_portfolio_loss(portfolio::Portfolio) =
+    rand_portfolio_loss(rand(Random.default_rng(), UInt64), portfolio)
