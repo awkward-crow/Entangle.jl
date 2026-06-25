@@ -89,8 +89,8 @@ for (name, aws, rs) in [(:acme, 0.4, 0.3), (:globex, 0.6, 0.0), (:initech, 0.3, 
         secondary_severity    = Metalog(quantiles = [0.10 => 0.05, 0.50 => 0.30, 0.90 => 0.80], lower = 0),
         secondary_as_fraction = true,
     )
-    add!(portfolio, model)
-    add!(loadings, name, FactorLoadings(aws = aws, ransomware = rs))
+    insert!(portfolio, model)
+    insert!(loadings, name, FactorLoadings(aws = aws, ransomware = rs))
 end
 
 calculate_marginal_losses!(portfolio; n_scenarios = 100_000, seed = 42)
@@ -137,7 +137,7 @@ aws_node(name) = FAIRNode(
 
 portfolio = Portfolio()
 for name in (:acme, :globex, :initech)
-    add!(portfolio, FAIRModel(name, aws_node(name)))
+    insert!(portfolio, FAIRModel(name, aws_node(name)))
 end
 
 exposures = ScenarioExposures()

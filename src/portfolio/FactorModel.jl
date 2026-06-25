@@ -41,7 +41,7 @@ Collection of `FactorLoadings` indexed by organisation name, parallel to a
 `Portfolio`. Kept separate so loadings can be revised without rerunning
 single-organisation simulations.
 
-    add!(pl, :acme, FactorLoadings(aws = 0.4, ransomware = 0.3))
+    insert!(pl, :acme, FactorLoadings(aws = 0.4, ransomware = 0.3))
 """
 
 struct PortfolioLoadings
@@ -50,9 +50,33 @@ end
 
 PortfolioLoadings() = PortfolioLoadings(Dict{Symbol, FactorLoadings}())
 
-function add!(pl::PortfolioLoadings, name::Symbol, fl::FactorLoadings)
+"""
+    insert!(pl, name, fl::FactorLoadings) -> pl
+
+Add loadings for `name`. Throws if loadings for that name are already present;
+use `update!` to replace existing loadings.
+"""
+function Base.insert!(pl::PortfolioLoadings, name::Symbol, fl::FactorLoadings)
+    haskey(pl.loadings, name) && throw(ArgumentError(
+        "loadings for :$name already present — use update! to replace them"
+    ))
     pl.loadings[name] = fl
     return pl
+end
+
+"""
+    update!(pl, name, fl::FactorLoadings) -> FactorLoadings
+
+Replace loadings for `name`. Throws if no loadings for that name are present;
+use `insert!` to add a new entry. Returns the old `FactorLoadings`.
+"""
+function update!(pl::PortfolioLoadings, name::Symbol, fl::FactorLoadings)
+    haskey(pl.loadings, name) || throw(ArgumentError(
+        "no loadings for :$name — use insert! to add a new entry"
+    ))
+    old = pl.loadings[name]
+    pl.loadings[name] = fl
+    return old
 end
 
 Base.getindex(pl::PortfolioLoadings, name::Symbol) = pl.loadings[name]

@@ -42,31 +42,43 @@ end
 
 @testset "PortfolioLoadings" begin
 
-    @testset "construction and add!" begin
+    @testset "construction and insert!" begin
         pl = PortfolioLoadings()
         @test length(pl) == 0
 
         fl = FactorLoadings(aws = 0.4)
-        add!(pl, :acme, fl)
+        insert!(pl, :acme, fl)
         @test length(pl)    == 1
         @test haskey(pl, :acme)
         @test pl[:acme][:aws] ≈ 0.4
     end
 
-    @testset "overwrite existing entry" begin
+    @testset "insert! throws on duplicate" begin
         pl = PortfolioLoadings()
-        add!(pl, :acme, FactorLoadings(aws = 0.4))
-        add!(pl, :acme, FactorLoadings(ransomware = 0.6))
-        @test length(pl)        == 1
-        @test pl[:acme][:aws]       == 0.0
-        @test pl[:acme][:ransomware] ≈ 0.6
+        insert!(pl, :acme, FactorLoadings(aws = 0.4))
+        @test_throws ArgumentError insert!(pl, :acme, FactorLoadings(ransomware = 0.6))
+    end
+
+    @testset "update! replaces and returns old value" begin
+        pl = PortfolioLoadings()
+        insert!(pl, :acme, FactorLoadings(aws = 0.4))
+        old = update!(pl, :acme, FactorLoadings(ransomware = 0.6))
+        @test length(pl)             == 1
+        @test pl[:acme][:aws]        == 0.0
+        @test pl[:acme][:ransomware] ≈  0.6
+        @test old[:aws]              ≈  0.4
+    end
+
+    @testset "update! throws when absent" begin
+        pl = PortfolioLoadings()
+        @test_throws ArgumentError update!(pl, :acme, FactorLoadings(aws = 0.4))
     end
 
     @testset "keys" begin
         pl = PortfolioLoadings()
-        add!(pl, :acme,  FactorLoadings(aws = 0.3))
-        add!(pl, :globex, FactorLoadings(ransomware = 0.5))
-        @test :acme  in keys(pl)
+        insert!(pl, :acme,   FactorLoadings(aws = 0.3))
+        insert!(pl, :globex, FactorLoadings(ransomware = 0.5))
+        @test :acme   in keys(pl)
         @test :globex in keys(pl)
     end
 
@@ -136,22 +148,41 @@ end
         @test length(p) == 0
     end
 
-    @testset "add! and accessors" begin
+    @testset "insert! and accessors" begin
         p = Portfolio()
-        add!(p, _simple_model(:acme))
+        insert!(p, _simple_model(:acme))
         @test length(p) == 1
         @test haskey(p, :acme)
         @test :acme in names(p)
         @test !has_loss_samples(p, :acme)
     end
 
-    @testset "add! invalidates samples" begin
+    @testset "insert! throws on duplicate" begin
         p = Portfolio()
-        add!(p, _simple_model(:acme))
+        insert!(p, _simple_model(:acme))
+        @test_throws ArgumentError insert!(p, _simple_model(:acme))
+    end
+
+    @testset "update! invalidates samples" begin
+        p = Portfolio()
+        insert!(p, _simple_model(:acme))
         calculate_marginal_loss!(p, :acme; n_scenarios = 100, seed = TEST_SEED)
         @test has_loss_samples(p, :acme)
-        add!(p, _simple_model(:acme))
+        update!(p, _simple_model(:acme))
         @test !has_loss_samples(p, :acme)
+    end
+
+    @testset "update! throws when absent" begin
+        p = Portfolio()
+        @test_throws ArgumentError update!(p, _simple_model(:acme))
+    end
+
+    @testset "update! returns old model" begin
+        p = Portfolio()
+        m1 = _simple_model(:acme)
+        insert!(p, m1)
+        old = update!(p, _simple_model(:acme))
+        @test old === m1
     end
 
     @testset "calculate_marginal_loss! unknown name" begin
@@ -161,7 +192,7 @@ end
 
     @testset "calculate_marginal_loss! stores sorted samples" begin
         p = Portfolio()
-        add!(p, _simple_model(:acme))
+        insert!(p, _simple_model(:acme))
         calculate_marginal_loss!(p, :acme; n_scenarios = 1_000, seed = TEST_SEED)
         s = p.sorted_loss_samples[:acme]
         @test length(s)    == 1_000
@@ -171,12 +202,12 @@ end
 
     @testset "seed stability" begin
         p1 = Portfolio()
-        add!(p1, _simple_model(:acme))
+        insert!(p1, _simple_model(:acme))
         calculate_marginal_loss!(p1, :acme; n_scenarios = 500, seed = TEST_SEED)
 
         p2 = Portfolio()
-        add!(p2, _simple_model(:acme))
-        add!(p2, _simple_model(:globex))
+        insert!(p2, _simple_model(:acme))
+        insert!(p2, _simple_model(:globex))
         calculate_marginal_loss!(p2, :acme; n_scenarios = 500, seed = TEST_SEED)
 
         @test p1.sorted_loss_samples[:acme] == p2.sorted_loss_samples[:acme]
@@ -184,8 +215,8 @@ end
 
     @testset "calculate_marginal_losses!" begin
         p = Portfolio()
-        add!(p, _simple_model(:acme))
-        add!(p, _simple_model(:globex))
+        insert!(p, _simple_model(:acme))
+        insert!(p, _simple_model(:globex))
         calculate_marginal_losses!(p; n_scenarios = 500, seed = TEST_SEED)
         @test has_loss_samples(p, :acme)
         @test has_loss_samples(p, :globex)
@@ -223,18 +254,18 @@ end
 
     function _portfolio()
         p = Portfolio()
-        add!(p, _simple_model(:acme))
-        add!(p, _simple_model(:globex))
+        insert!(p, _simple_model(:acme))
+        insert!(p, _simple_model(:globex))
         calculate_marginal_losses!(p; n_scenarios = 2_000, seed = TEST_SEED)
         pl = PortfolioLoadings()
-        add!(pl, :acme,   FactorLoadings(aws = 0.4, ransomware = 0.3))
-        add!(pl, :globex, FactorLoadings(aws = 0.5))
+        insert!(pl, :acme,   FactorLoadings(aws = 0.4, ransomware = 0.3))
+        insert!(pl, :globex, FactorLoadings(aws = 0.5))
         return p, pl
     end
 
     @testset "error when samples missing" begin
         p = Portfolio()
-        add!(p, _simple_model(:acme))
+        insert!(p, _simple_model(:acme))
         @test_throws ArgumentError rand_portfolio_loss(
             TEST_SEED, PortfolioLoadings(), copula, p, 100
         )
@@ -268,18 +299,18 @@ end
 
     @testset "insertion order independence" begin
         p1 = Portfolio()
-        add!(p1, _simple_model(:acme))
-        add!(p1, _simple_model(:globex))
+        insert!(p1, _simple_model(:acme))
+        insert!(p1, _simple_model(:globex))
         calculate_marginal_losses!(p1; n_scenarios = 500, seed = TEST_SEED)
 
         p2 = Portfolio()
-        add!(p2, _simple_model(:globex))
-        add!(p2, _simple_model(:acme))
+        insert!(p2, _simple_model(:globex))
+        insert!(p2, _simple_model(:acme))
         calculate_marginal_losses!(p2; n_scenarios = 500, seed = TEST_SEED)
 
         pl = PortfolioLoadings()
-        add!(pl, :acme,   FactorLoadings(aws = 0.4))
-        add!(pl, :globex, FactorLoadings(aws = 0.3))
+        insert!(pl, :acme,   FactorLoadings(aws = 0.4))
+        insert!(pl, :globex, FactorLoadings(aws = 0.3))
 
         l1 = rand_portfolio_loss(TEST_SEED, pl, copula, p1, 200)
         l2 = rand_portfolio_loss(TEST_SEED, pl, copula, p2, 200)
@@ -288,7 +319,7 @@ end
 
     @testset "absent loadings treated as idiosyncratic" begin
         p = Portfolio()
-        add!(p, _simple_model(:acme))
+        insert!(p, _simple_model(:acme))
         calculate_marginal_losses!(p; n_scenarios = 500, seed = TEST_SEED)
         losses = rand_portfolio_loss(TEST_SEED, PortfolioLoadings(), copula, p, 200)
         @test length(losses) == 200

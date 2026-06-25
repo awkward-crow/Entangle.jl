@@ -153,7 +153,7 @@ end
 
     function _portfolio_and_exposures(; p_hit)
         p  = Portfolio()
-        add!(p, _scenario_model(:acme))
+        insert!(p, _scenario_model(:acme))
         se = ScenarioExposures()
         insert!(se, :acme; aws = p_hit)
         return p, se
@@ -180,12 +180,12 @@ end
 
     @testset "insertion order independence" begin
         p1 = Portfolio()
-        add!(p1, _scenario_model(:acme))
-        add!(p1, _scenario_model(:globex))
+        insert!(p1, _scenario_model(:acme))
+        insert!(p1, _scenario_model(:globex))
 
         p2 = Portfolio()
-        add!(p2, _scenario_model(:globex))
-        add!(p2, _scenario_model(:acme))
+        insert!(p2, _scenario_model(:globex))
+        insert!(p2, _scenario_model(:acme))
 
         se = ScenarioExposures()
         insert!(se, :acme;   aws = 0.6)
@@ -220,7 +220,7 @@ end
 
     @testset "absent org treated as unexposed" begin
         p  = Portfolio()
-        add!(p, _scenario_model(:acme))
+        insert!(p, _scenario_model(:acme))
         se = ScenarioExposures()
         # :acme not in exposures → p_hit = 0 → only baseline
         losses = rand_scenario_losses(TEST_SEED, :aws, se, p; n_samples = 100_000)
@@ -236,7 +236,7 @@ end
 
     @testset "does not require pre-computed marginal samples" begin
         p  = Portfolio()
-        add!(p, _scenario_model(:acme))
+        insert!(p, _scenario_model(:acme))
         se = ScenarioExposures()
         insert!(se, :acme; aws = 0.5)
         @test !has_loss_samples(p, :acme)

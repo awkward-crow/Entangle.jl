@@ -5,7 +5,7 @@ Mutable collection of single-organisation `FAIRModel`s and their pre-computed
 sorted loss samples. Samples must be computed before portfolio simulation via
 `calculate_marginal_losses!`.
 
-    add!(portfolio, model)
+    insert!(portfolio, model)
     calculate_marginal_losses!(portfolio; n_scenarios, seed)
 """
 mutable struct Portfolio
@@ -16,15 +16,34 @@ end
 Portfolio() = Portfolio(Dict{Symbol, FAIRModel}(), Dict{Symbol, Vector{Float64}}())
 
 """
-    add!(portfolio, model::FAIRModel) -> portfolio
+    insert!(portfolio, model::FAIRModel) -> portfolio
 
-Register `model` in `portfolio`. Any previously cached loss samples for the
-same name are invalidated.
+Register `model` in `portfolio`. Throws if a model with the same name is
+already present; use `update!` to replace an existing model.
 """
-function add!(portfolio::Portfolio, model::FAIRModel)
+function Base.insert!(portfolio::Portfolio, model::FAIRModel)
+    haskey(portfolio.models, model.name) && throw(ArgumentError(
+        "a model named :$(model.name) is already in the portfolio — use update! to replace it"
+    ))
+    portfolio.models[model.name] = model
+    return portfolio
+end
+
+"""
+    update!(portfolio, model::FAIRModel) -> FAIRModel
+
+Replace an existing model in `portfolio`. Throws if no model with that name is
+present; use `insert!` to add a new model. Clears any cached loss samples for
+the replaced model. Returns the old model.
+"""
+function update!(portfolio::Portfolio, model::FAIRModel)
+    haskey(portfolio.models, model.name) || throw(ArgumentError(
+        "no model named :$(model.name) in portfolio — use insert! to add a new model"
+    ))
+    old = portfolio.models[model.name]
     portfolio.models[model.name] = model
     delete!(portfolio.sorted_loss_samples, model.name)
-    return portfolio
+    return old
 end
 
 Base.length(portfolio::Portfolio)               = length(portfolio.models)
