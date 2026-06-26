@@ -8,6 +8,18 @@ Models the annual loss distribution for a single organisation as a compound Pois
 
 ---
 
+## Motivation
+
+The cyber insurance market has grown rapidly, but its quantitative foundations remain underdeveloped. Existing implementations of the FAIR framework are predominantly Excel-based tools running single-organisation Monte Carlo with no mechanism for capturing the correlated losses that arise when a common threat actor — malware propagating through a shared software dependency, a cloud provider outage, a coordinated campaign — affects many policyholders simultaneously.
+
+This is the **cyber accumulation problem**: the defining challenge of cyber portfolio underwriting. Events like NotPetya (2017), WannaCry (2017), and the CrowdStrike outage (2024) demonstrated that a single incident can produce correlated losses across thousands of unrelated organisations. Without a portfolio-level model capturing these dependencies, an insurer cannot know its true accumulated exposure and cannot price or manage it.
+
+Entangle.jl addresses this with four layers: (1) a single-organisation FAIR model extended with proper heavy-tailed severity distributions and named, factor-tagged loss nodes; (2) a factor model mapping policyholders to common cyber risk exposures; (3) a Student-t factor copula aggregating correlated tail losses across the portfolio; and (4) a scenario catalogue of named systemic events operating at node level.
+
+The design uses two simulation modes. Mode 1 runs the factor copula at aggregate level — an acknowledged approximation (Böhme & Kataria, 2006) that is acceptable because in the tail a single node typically dominates the aggregate. Mode 2 directly activates the factor-tagged nodes corresponding to a named scenario, giving node-level precision for calibration and validation.
+
+---
+
 ## What's implemented
 
 **Distributions** (`src/distributions/`)
@@ -166,6 +178,26 @@ Julia 1.10 or later. Key packages: `Distributions.jl`, `Statistics` (stdlib).
 - [x] Phase 3 — Portfolio simulation and copula
 - [x] Phase 4 — Scenario catalogue
 - [ ] Phase 5 — Bayesian calibration
+
+---
+
+## References
+
+**FAIR framework**
+- [FAIR Standard v3.0](https://www.fairinstitute.org/hubfs/Standards%20Artifacts/Factor%20Analysis%20of%20Information%20Risk%20(FAIR)%20Standard%20v3.0%20(January%202025).pdf) (January 2025), FAIR Institute
+
+**Cyber accumulation**
+- [CyRiM Bashe Attack: Global Infection by Contagious Malware](https://assets.lloyds.com/assets/pdf-bashe-attack-cyrimbasheattack-finalbashe-attack/1/pdf-bashe-attack-CyRiMBasheAttack_FINALbashe-attack.pdf) (2019)
+- [Practical Management of Cyber Exposures and Aggregations](https://lmalloyds.com/wp-content/uploads/2025/07/LMA-EMWG-Cyber-Risk-Paper.pdf) (2025), LMA
+- Böhme & Kataria (2006). Models and Measures for Correlation in Cyber-Insurance. *Workshop on the Economics of Information Security.* — academic precedent for the aggregate-level factor copula approach used in Mode 1
+- Zeller & Scherer (2022). A comprehensive model for cyber risk based on marked point processes and its application to insurance. *European Actuarial Journal*, 12(1), 33–85. https://doi.org/10.1007/s13385-021-00290-1
+
+**Extreme value theory and copulas**
+- Coles, *An Introduction to Statistical Modeling of Extreme Values*, Springer, 2001
+- McNeil, Frey & Embrechts, *Quantitative Risk Management*, Princeton University Press
+
+**Metalog distribution**
+- Keelin (2016). The Metalog Distributions. *Decision Analysis*, 13(4), 243–277.
 
 ---
 
