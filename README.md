@@ -37,7 +37,7 @@ Models the annual loss distribution for a single organisation as a compound Pois
 
 **Scenario catalogue** (`src/scenarios/`)
 - `FAIRNode` — individual risk node within a `FAIRModel`; carries a `name` and an optional `factor` symbol that links it to a systemic scenario (e.g. `factor = :aws`)
-- `ScenarioExposures` — per-organisation Bernoulli hit probabilities for named systemic scenarios; `insert!` adds new entries (throws on duplicate), `update!` overwrites existing ones (returns old values)
+- `PortfolioExposures` — per-organisation Bernoulli hit probabilities for named systemic scenarios; `insert!` adds new entries (throws on duplicate), `update!` overwrites existing ones (returns old values)
 - `rand_scenario_losses` — Mode 2 engine: for each sample, nodes tagged with the active scenario fire with the organisation's hit probability; all other nodes fire at baseline; operates at node level without pre-computed marginal samples
 
 ---
@@ -140,7 +140,7 @@ for name in (:acme, :globex, :initech)
     insert!(portfolio, FAIRModel(name, aws_node(name)))
 end
 
-exposures = ScenarioExposures()
+exposures = PortfolioExposures()
 insert!(exposures, :acme,    aws = 0.7)
 insert!(exposures, :globex,  aws = 0.3)
 insert!(exposures, :initech, aws = 0.5)

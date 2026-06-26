@@ -65,10 +65,11 @@ function Base.insert!(pl::PortfolioLoadings, name::Symbol, fl::FactorLoadings)
 end
 
 """
-    update!(pl, name, fl::FactorLoadings) -> FactorLoadings
+    update!(pl, name, fl::FactorLoadings) -> Tuple{Symbol, FactorLoadings}
 
 Replace loadings for `name`. Throws if no loadings for that name are present;
-use `insert!` to add a new entry. Returns the old `FactorLoadings`.
+use `insert!` to add a new entry. Returns `(name, old_fl)` so that the result
+can be splatted back: `update!(pl, update!(pl, name, fl)...)`.
 """
 function update!(pl::PortfolioLoadings, name::Symbol, fl::FactorLoadings)
     haskey(pl.loadings, name) || throw(ArgumentError(
@@ -76,8 +77,11 @@ function update!(pl::PortfolioLoadings, name::Symbol, fl::FactorLoadings)
     ))
     old = pl.loadings[name]
     pl.loadings[name] = fl
-    return old
+    return (name, old)
 end
+
+Base.insert!(pl::PortfolioLoadings, name::Symbol; kwargs...) =
+    insert!(pl, name, FactorLoadings(; kwargs...))
 
 Base.getindex(pl::PortfolioLoadings, name::Symbol) = pl.loadings[name]
 Base.haskey(pl::PortfolioLoadings, name::Symbol)   = haskey(pl.loadings, name)

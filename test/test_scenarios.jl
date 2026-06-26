@@ -50,41 +50,75 @@ end
 
 end
 
-# ---- ScenarioExposures -------------------------------------------------------
+# ---- Exposures ---------------------------------------------------------------
 
-@testset "ScenarioExposures" begin
+@testset "Exposures" begin
+
+    @testset "construction and getindex" begin
+        e = Exposures(aws = 0.7, ransomware = 0.4)
+        @test e[:aws]       ≈ 0.7
+        @test e[:ransomware] ≈ 0.4
+        @test e[:crowdstrike] == 0.0
+    end
+
+    @testset "isempty" begin
+        @test  isempty(Exposures())
+        @test !isempty(Exposures(aws = 0.5))
+    end
+
+    @testset "names" begin
+        e = Exposures(aws = 0.7, ransomware = 0.4)
+        @test Set(names(e)) == Set([:aws, :ransomware])
+    end
+
+    @testset "validates range" begin
+        @test_throws ArgumentError Exposures(aws = -0.1)
+        @test_throws ArgumentError Exposures(aws =  1.1)
+    end
+
+    @testset "accepts boundary values 0 and 1" begin
+        e = Exposures(aws = 0.0, ransomware = 1.0)
+        @test e[:aws]       == 0.0
+        @test e[:ransomware] == 1.0
+    end
+
+end
+
+# ---- PortfolioExposures -------------------------------------------------------
+
+@testset "PortfolioExposures" begin
 
     @testset "getindex returns 0 for absent org" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         @test se[:acme, :aws] == 0.0
     end
 
     @testset "getindex returns 0 for absent scenario" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         insert!(se, :acme; aws = 0.7)
         @test se[:acme, :ransomware] == 0.0
     end
 
     @testset "insert! adds entries" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         insert!(se, :acme; aws = 0.7, ransomware = 0.4)
         @test se[:acme, :aws]       ≈ 0.7
         @test se[:acme, :ransomware] ≈ 0.4
     end
 
     @testset "insert! returns exposures" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         @test insert!(se, :acme; aws = 0.5) === se
     end
 
     @testset "insert! throws on duplicate org/scenario" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         insert!(se, :acme; aws = 0.7)
         @test_throws ArgumentError insert!(se, :acme; aws = 0.9)
     end
 
     @testset "insert! allows new scenario for existing org" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         insert!(se, :acme; aws = 0.7)
         insert!(se, :acme; ransomware = 0.4)
         @test se[:acme, :aws]       ≈ 0.7
@@ -92,57 +126,85 @@ end
     end
 
     @testset "insert! is atomic: no partial write on duplicate" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         insert!(se, :acme; aws = 0.7)
         @test_throws ArgumentError insert!(se, :acme; ransomware = 0.4, aws = 0.9)
         @test se[:acme, :ransomware] == 0.0
     end
 
     @testset "insert! validates range" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         @test_throws ArgumentError insert!(se, :acme; aws = -0.1)
         @test_throws ArgumentError insert!(se, :acme; aws =  1.1)
     end
 
     @testset "insert! accepts boundary values 0 and 1" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         insert!(se, :acme; aws = 0.0, ransomware = 1.0)
         @test se[:acme, :aws]       == 0.0
         @test se[:acme, :ransomware] == 1.0
     end
 
     @testset "update! overwrites and returns old values" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         insert!(se, :acme; aws = 0.7, ransomware = 0.4)
-        old = update!(se, :acme; aws = 0.9, ransomware = 0.2)
-        @test se[:acme, :aws]       ≈ 0.9
+        (org, old) = update!(se, :acme; aws = 0.9, ransomware = 0.2)
+        @test se[:acme, :aws]        ≈ 0.9
         @test se[:acme, :ransomware] ≈ 0.2
+        @test org                    == :acme
         @test old[:aws]              ≈ 0.7
         @test old[:ransomware]       ≈ 0.4
     end
 
     @testset "update! throws if scenario not set" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         @test_throws ArgumentError update!(se, :acme; aws = 0.5)
     end
 
     @testset "update! throws if org absent" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         @test_throws ArgumentError update!(se, :acme; aws = 0.5)
     end
 
     @testset "update! is atomic: no partial write on missing scenario" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         insert!(se, :acme; aws = 0.7)
         @test_throws ArgumentError update!(se, :acme; aws = 0.9, ransomware = 0.5)
         @test se[:acme, :aws] ≈ 0.7
     end
 
     @testset "update! validates range" begin
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         insert!(se, :acme; aws = 0.7)
         @test_throws ArgumentError update!(se, :acme; aws = -0.1)
         @test_throws ArgumentError update!(se, :acme; aws =  1.1)
+    end
+
+    @testset "insert! accepts Exposures struct" begin
+        se = PortfolioExposures()
+        insert!(se, :acme, Exposures(aws = 0.7, ransomware = 0.4))
+        @test se[:acme, :aws]        ≈ 0.7
+        @test se[:acme, :ransomware] ≈ 0.4
+    end
+
+    @testset "update! accepts Exposures struct and returns Exposures" begin
+        se = PortfolioExposures()
+        insert!(se, :acme; aws = 0.7, ransomware = 0.4)
+        (org, old) = update!(se, :acme, Exposures(aws = 0.9, ransomware = 0.2))
+        @test org                    == :acme
+        @test se[:acme, :aws]        ≈ 0.9
+        @test se[:acme, :ransomware] ≈ 0.2
+        @test old isa Exposures
+        @test old[:aws]              ≈ 0.7
+        @test old[:ransomware]       ≈ 0.4
+    end
+
+    @testset "update! round-trip leaves se unchanged" begin
+        se = PortfolioExposures()
+        insert!(se, :acme; aws = 0.7, ransomware = 0.4)
+        update!(se, update!(se, :acme, Exposures(aws = 0.9, ransomware = 0.2))...)
+        @test se[:acme, :aws]        ≈ 0.7
+        @test se[:acme, :ransomware] ≈ 0.4
     end
 
 end
@@ -154,7 +216,7 @@ end
     function _portfolio_and_exposures(; p_hit)
         p  = Portfolio()
         insert!(p, _scenario_model(:acme))
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         insert!(se, :acme; aws = p_hit)
         return p, se
     end
@@ -187,7 +249,7 @@ end
         insert!(p2, _scenario_model(:globex))
         insert!(p2, _scenario_model(:acme))
 
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         insert!(se, :acme;   aws = 0.6)
         insert!(se, :globex; aws = 0.4)
 
@@ -221,7 +283,7 @@ end
     @testset "absent org treated as unexposed" begin
         p  = Portfolio()
         insert!(p, _scenario_model(:acme))
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         # :acme not in exposures → p_hit = 0 → only baseline
         losses = rand_scenario_losses(TEST_SEED, :aws, se, p; n_samples = 100_000)
         @test mean(losses) ≈ 30.0  atol=8.0
@@ -237,7 +299,7 @@ end
     @testset "does not require pre-computed marginal samples" begin
         p  = Portfolio()
         insert!(p, _scenario_model(:acme))
-        se = ScenarioExposures()
+        se = PortfolioExposures()
         insert!(se, :acme; aws = 0.5)
         @test !has_loss_samples(p, :acme)
         @test_nowarn rand_scenario_losses(TEST_SEED, :aws, se, p; n_samples = 100)

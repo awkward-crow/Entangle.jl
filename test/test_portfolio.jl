@@ -53,6 +53,13 @@ end
         @test pl[:acme][:aws] ≈ 0.4
     end
 
+    @testset "insert! accepts kwargs" begin
+        pl = PortfolioLoadings()
+        insert!(pl, :acme; aws = 0.4, ransomware = 0.3)
+        @test pl[:acme][:aws]       ≈ 0.4
+        @test pl[:acme][:ransomware] ≈ 0.3
+    end
+
     @testset "insert! throws on duplicate" begin
         pl = PortfolioLoadings()
         insert!(pl, :acme, FactorLoadings(aws = 0.4))
@@ -62,10 +69,11 @@ end
     @testset "update! replaces and returns old value" begin
         pl = PortfolioLoadings()
         insert!(pl, :acme, FactorLoadings(aws = 0.4))
-        old = update!(pl, :acme, FactorLoadings(ransomware = 0.6))
+        (name, old) = update!(pl, :acme, FactorLoadings(ransomware = 0.6))
         @test length(pl)             == 1
         @test pl[:acme][:aws]        == 0.0
         @test pl[:acme][:ransomware] ≈  0.6
+        @test name                   == :acme
         @test old[:aws]              ≈  0.4
     end
 

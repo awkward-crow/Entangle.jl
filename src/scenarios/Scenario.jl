@@ -1,10 +1,38 @@
 """
-    ScenarioExposures()
+    Exposures(; scenario = value, ...)
+
+Bernoulli hit probabilities for a single organisation across named scenarios.
+All values must be in [0, 1]; validated at construction.
+
+    Exposures(aws_outage = 0.7, ransomware = 0.4)
+"""
+struct Exposures
+    values :: Dict{Symbol, Float64}
+end
+
+function Exposures(; kwargs...)
+    d = Dict{Symbol, Float64}(k => Float64(v) for (k, v) in kwargs)
+    for (k, v) in d
+        0.0 <= v <= 1.0 || throw(ArgumentError(
+            "exposure :$k must be in [0, 1]; got $v"
+        ))
+    end
+    return Exposures(d)
+end
+
+Base.getindex(e::Exposures, k::Symbol) = get(e.values, k, 0.0)
+Base.isempty(e::Exposures)             = isempty(e.values)
+Base.names(e::Exposures)               = keys(e.values)
+
+# ---- PortfolioExposures -------------------------------------------------------
+
+"""
+    PortfolioExposures()
 
 Per-organisation Bernoulli hit probabilities for named systemic scenarios,
 indexed by organisation name and scenario symbol.
 
-    se = ScenarioExposures()
+    se = PortfolioExposures()
     insert!(se, :acme,   aws = 0.7, ransomware = 0.4)
     insert!(se, :globex, aws = 0.3, crowdstrike = 0.6)
 
@@ -14,13 +42,13 @@ Kept separate from `PortfolioLoadings`: factor loadings are copula parameters
 with a joint norm constraint; scenario exposures are independent Bernoulli hit
 probabilities with no coupling across scenarios.
 """
-struct ScenarioExposures
+struct PortfolioExposures
     exposures :: Dict{Symbol, Dict{Symbol, Float64}}
 end
 
-ScenarioExposures() = ScenarioExposures(Dict{Symbol, Dict{Symbol, Float64}}())
+PortfolioExposures() = PortfolioExposures(Dict{Symbol, Dict{Symbol, Float64}}())
 
-function Base.getindex(se::ScenarioExposures, org::Symbol, scenario::Symbol)
+function Base.getindex(se::PortfolioExposures, org::Symbol, scenario::Symbol)
     d = get(se.exposures, org, nothing)
     d === nothing ? 0.0 : get(d, scenario, 0.0)
 end
@@ -28,55 +56,57 @@ end
 # ---- Mutation ----------------------------------------------------------------
 
 """
+    insert!(exposures, org, e::Exposures) -> exposures
     insert!(exposures, org; scenario = value, ...) -> exposures
 
 Add new scenario exposures for `org`. Throws if any specified `org`/scenario
 combination is already present; use `update!` to overwrite existing values.
-All values must be in [0, 1]. Changes are all-or-nothing: no partial writes
-on error.
+Changes are all-or-nothing: no partial writes on error.
 """
-function Base.insert!(se::ScenarioExposures, org::Symbol; kwargs...)
+function Base.insert!(se::PortfolioExposures, org::Symbol, e::Exposures)
     org_dict = get(se.exposures, org, nothing)
-    for (scenario, value) in kwargs
-        0.0 <= Float64(value) <= 1.0 || throw(ArgumentError(
-            "exposure for :$org/:$scenario must be in [0, 1]; got $value"
-        ))
+    for scenario in names(e)
         org_dict !== nothing && haskey(org_dict, scenario) && throw(ArgumentError(
             "exposure for :$org/:$scenario already set — use update! to overwrite"
         ))
     end
     d = get!(se.exposures, org, Dict{Symbol, Float64}())
-    for (scenario, value) in kwargs
-        d[scenario] = Float64(value)
+    for scenario in names(e)
+        d[scenario] = e[scenario]
     end
     return se
 end
 
+Base.insert!(se::PortfolioExposures, org::Symbol; kwargs...) =
+    insert!(se, org, Exposures(; kwargs...))
+
 """
-    update!(exposures, org; scenario = value, ...) -> Dict{Symbol, Float64}
+    update!(exposures, org, e::Exposures) -> Tuple{Symbol, Exposures}
+    update!(exposures, org; scenario = value, ...) -> Tuple{Symbol, Exposures}
 
 Overwrite existing scenario exposures for `org`. Throws if any specified
 `org`/scenario combination has not been set; use `insert!` to add new entries.
-Returns the previous values. All new values must be in [0, 1]. Changes are
-all-or-nothing: no partial writes on error.
+Returns `(org, old_exposures)` so that the result can be splatted back:
+`update!(se, update!(se, org, e)...)`. Changes are all-or-nothing: no partial
+writes on error.
 """
-function update!(se::ScenarioExposures, org::Symbol; kwargs...)
+function update!(se::PortfolioExposures, org::Symbol, e::Exposures)
     org_dict = get(se.exposures, org, nothing)
-    for (scenario, value) in kwargs
-        0.0 <= Float64(value) <= 1.0 || throw(ArgumentError(
-            "exposure for :$org/:$scenario must be in [0, 1]; got $value"
-        ))
+    for scenario in names(e)
         (org_dict === nothing || !haskey(org_dict, scenario)) && throw(ArgumentError(
             "no exposure for :$org/:$scenario — use insert! to add a new entry"
         ))
     end
     old = Dict{Symbol, Float64}()
-    for (scenario, value) in kwargs
+    for scenario in names(e)
         old[scenario]      = org_dict[scenario]
-        org_dict[scenario] = Float64(value)
+        org_dict[scenario] = e[scenario]
     end
-    return old
+    return (org, Exposures(old))
 end
+
+update!(se::PortfolioExposures, org::Symbol; kwargs...) =
+    update!(se, org, Exposures(; kwargs...))
 
 # ---- Mode 2 simulation engine ------------------------------------------------
 
@@ -99,7 +129,7 @@ stability regardless of insertion order.
 function rand_scenario_losses(
     seed      :: Integer,
     scenario  :: Symbol,
-    exposures :: ScenarioExposures,
+    exposures :: PortfolioExposures,
     portfolio :: Portfolio;
     n_samples :: Int,
 ) :: Vector{Float64}

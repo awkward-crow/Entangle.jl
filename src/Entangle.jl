@@ -34,6 +34,6 @@ export PortfolioLoadings, loading_matrix
 export Portfolio, has_loss_samples, calculate_marginal_loss!, calculate_marginal_losses!, empirical_quantile
 export FactorCopula, StudentTFactorCopula, rand_uniforms
 export rand_portfolio_loss
-export ScenarioExposures, update!, rand_scenario_losses
+export Exposures, PortfolioExposures, update!, rand_scenario_losses
 
 end # module Entangle
