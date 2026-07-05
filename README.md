@@ -189,8 +189,9 @@ Julia 1.10 or later. Key packages: `Distributions.jl`, `Statistics` (stdlib).
 **Cyber accumulation**
 - [CyRiM Bashe Attack: Global Infection by Contagious Malware](https://assets.lloyds.com/assets/pdf-bashe-attack-cyrimbasheattack-finalbashe-attack/1/pdf-bashe-attack-CyRiMBasheAttack_FINALbashe-attack.pdf) (2019)
 - [Practical Management of Cyber Exposures and Aggregations](https://lmalloyds.com/wp-content/uploads/2025/07/LMA-EMWG-Cyber-Risk-Paper.pdf) (2025), LMA
-- Böhme & Kataria (2006). Models and Measures for Correlation in Cyber-Insurance. *Workshop on the Economics of Information Security.* — academic precedent for the aggregate-level factor copula approach used in Mode 1
-- Zeller & Scherer (2022). A comprehensive model for cyber risk based on marked point processes and its application to insurance. *European Actuarial Journal*, 12(1), 33–85. https://doi.org/10.1007/s13385-021-00290-1
+- Zeller, G. & Scherer, M. (2022). A comprehensive model for cyber risk based on marked point processes and its application to insurance. *European Actuarial Journal*, 12(1), 33–85. https://doi.org/10.1007/s13385-021-00290-1
+- Zeller, G. & Scherer, M. (2024). Is accumulation risk in cyber methodically underestimated? European Actuarial Journal, 14(3), 711–748. https://doi.org/10.1007/s13385-024-00381-9
+- Carannante, M. & Mazzoccoli, A. (2025). "An Analytical Review of Cyber Risk Management by Insurance Companies: A Mathematical Perspective." Risks, 13(8), 144. https://doi.org/10.3390/risks13080144
 
 **Extreme value theory and copulas**
 - Coles, *An Introduction to Statistical Modeling of Extreme Values*, Springer, 2001
