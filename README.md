@@ -80,7 +80,7 @@ println("1-in-200: £$(round(pml(losses, 200) / 1e6, digits=1))m")
 ep = exceedance_probability(losses)
 ```
 
-### Portfolio with correlated losses
+### Portfolio with correlated losses and tail dependence
 
 ```julia
 using Entangle, Distributions, Random
@@ -111,15 +111,20 @@ calculate_marginal_losses!(portfolio; n_scenarios = 100_000, seed = 42)
 seed = 103357224
 n = 100_000
 
-independent = rand_portfolio_loss(seed, portfolio, n)
+independent    = rand_portfolio_loss(seed, portfolio, n)
+correlated     = rand_portfolio_loss(seed, loadings, GaussianFactorCopula(),       portfolio, n)
+tail_dependent = rand_portfolio_loss(seed, loadings, StudentTFactorCopula(ν = 4),  portfolio, n)
 
-copula = StudentTFactorCopula(ν = 4)
-correlated  = rand_portfolio_loss(seed, loadings, copula, portfolio, n)
+println("1-in-200 PML — independent:    £$(round(pml(independent,    200) / 1e6, digits = 1))m")
+println("1-in-200 PML — correlated:     £$(round(pml(correlated,     200) / 1e6, digits = 1))m")
+println("1-in-200 PML — tail_dependent: £$(round(pml(tail_dependent, 200) / 1e6, digits = 1))m")
+# 1-in-200 PML — independent:    £7.4m
+# 1-in-200 PML — correlated:     £7.9m
+# 1-in-200 PML — tail_dependent: £9.3m
 
-println("1-in-200 PML — correlated:  £$(round(pml(correlated,  200) / 1e6, digits = 1))m")
-println("1-in-200 PML — independent: £$(round(pml(independent, 200) / 1e6, digits = 1))m")
-# The gap between the two is the accumulation risk a naive independence
-# assumption would miss — the defining exposure in cyber portfolio underwriting.
+# All three share the same marginals. The Gaussian and Student-t copulas use the
+# same loadings, giving the same linear correlation. The remaining gap — correlated
+# to tail_dependent — is the tail dependence contribution.
 ```
 
 ### Scenario losses (Mode 2)

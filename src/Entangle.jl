@@ -19,6 +19,7 @@ include("Metrics.jl")
 
 include("portfolio/FactorModel.jl")
 include("portfolio/Copula.jl")
+include("portfolio/GaussianFactorCopula.jl")
 include("portfolio/StudentTFactorCopula.jl")
 include("portfolio/Portfolio.jl")
 
@@ -32,7 +33,7 @@ export ael, pml, EPCurve, exceedance_probability, STANDARD_RETURN_PERIODS
 export FactorLoadings, norm_sq, idiosyncratic_weight
 export PortfolioLoadings, loading_matrix
 export Portfolio, has_loss_samples, calculate_marginal_loss!, calculate_marginal_losses!, empirical_quantile
-export FactorCopula, StudentTFactorCopula, rand_uniforms
+export FactorCopula, GaussianFactorCopula, StudentTFactorCopula, rand_uniforms
 export rand_portfolio_loss
 export Exposures, PortfolioExposures, update!, rand_scenario_losses
 
