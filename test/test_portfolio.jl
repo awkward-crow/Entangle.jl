@@ -234,24 +234,46 @@ end
 
 @testset "rand_uniforms" begin
 
-    copula = StudentTFactorCopula(ν = 4.0)
+    @testset "StudentTFactorCopula" begin
+        copula = StudentTFactorCopula(ν = 4.0)
+        β      = [0.4 0.3; 0.5 0.0; 0.0 0.6]
 
-    @testset "returns uniforms in [0, 1]" begin
-        β = [0.4 0.3; 0.5 0.0; 0.0 0.6]
-        U = rand_uniforms(Xoshiro(TEST_SEED), copula, β)
-        @test length(U) == 3
-        @test all(0.0 .<= U .<= 1.0)
+        @testset "returns uniforms in [0, 1]" begin
+            U = rand_uniforms(Xoshiro(TEST_SEED), copula, β)
+            @test length(U) == 3
+            @test all(0.0 .<= U .<= 1.0)
+        end
+
+        @testset "reproducible" begin
+            @test rand_uniforms(Xoshiro(TEST_SEED), copula, β) ==
+                  rand_uniforms(Xoshiro(TEST_SEED), copula, β)
+        end
+
+        @testset "empty (n = 0)" begin
+            U = rand_uniforms(Xoshiro(TEST_SEED), copula, zeros(0, 0))
+            @test isempty(U)
+        end
     end
 
-    @testset "reproducible" begin
-        β = [0.4 0.3; 0.5 0.0; 0.0 0.6]
-        @test rand_uniforms(Xoshiro(TEST_SEED), copula, β) ==
-              rand_uniforms(Xoshiro(TEST_SEED), copula, β)
-    end
+    @testset "GaussianFactorCopula" begin
+        copula = GaussianFactorCopula()
+        β      = [0.4 0.3; 0.5 0.0; 0.0 0.6]
 
-    @testset "empty (n = 0)" begin
-        U = rand_uniforms(Xoshiro(TEST_SEED), copula, zeros(0, 0))
-        @test isempty(U)
+        @testset "returns uniforms in [0, 1]" begin
+            U = rand_uniforms(Xoshiro(TEST_SEED), copula, β)
+            @test length(U) == 3
+            @test all(0.0 .<= U .<= 1.0)
+        end
+
+        @testset "reproducible" begin
+            @test rand_uniforms(Xoshiro(TEST_SEED), copula, β) ==
+                  rand_uniforms(Xoshiro(TEST_SEED), copula, β)
+        end
+
+        @testset "empty (n = 0)" begin
+            U = rand_uniforms(Xoshiro(TEST_SEED), copula, zeros(0, 0))
+            @test isempty(U)
+        end
     end
 
 end
