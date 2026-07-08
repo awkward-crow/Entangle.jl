@@ -16,6 +16,14 @@ This is the **cyber accumulation problem**: the defining challenge of cyber port
 
 Entangle.jl addresses this with four layers: (1) a single-organisation FAIR model extended with proper heavy-tailed severity distributions and named, factor-tagged loss nodes; (2) a factor model mapping policyholders to common cyber risk exposures; (3) a Student-t factor copula aggregating correlated tail losses across the portfolio; and (4) a scenario catalogue of named systemic events operating at node level.
 
+The factor copula in layer (3) applies the framework of Oh & Patton (2017) — developed
+in an econometric/systemic-risk context — to insurance accumulation risk. Cross-firm
+correlation in cyber-insurance has been modelled with a t-copula before (Böhme &
+Kataria, 2006), but with a single implied correlation rather than an explicit factor
+structure; Entangle.jl extends this to a scalable, named-factor construction, so that
+correlation is driven by shared exposures (a common cloud provider, a shared software
+dependency) rather than a fitted correlation parameter.
+
 The design uses two simulation modes. Mode 1 runs the factor copula at aggregate level — an acknowledged approximation (Böhme & Kataria, 2006) that is acceptable because in the tail a single node typically dominates the aggregate. Mode 2 directly activates the factor-tagged nodes corresponding to a named scenario, giving node-level precision for calibration and validation.
 
 ---
@@ -192,6 +200,9 @@ Julia 1.10 or later. Key packages: `Distributions.jl`, `Statistics` (stdlib).
 - [FAIR Standard v3.0](https://www.fairinstitute.org/hubfs/Standards%20Artifacts/Factor%20Analysis%20of%20Information%20Risk%20(FAIR)%20Standard%20v3.0%20(January%202025).pdf) (January 2025), FAIR Institute
 
 **Cyber accumulation**
+- Böhme, R. and Kataria, G. (2006). Models and Measures for Correlation in Cyber-Insurance. Workshop on the Economics of Information Security (WEIS). https://weis2006.econinfosec.org/docs/16.pdf
+- Oh, D. H. and Patton, A. J. (2017). Modeling Dependence in High Dimensions with Factor Copulas. Journal of Business & Economic Statistics, 35(1), 139–154. https://doi.org/10.1080/07350015.2015.1062384
+- Embrechts, P., McNeil, A. and Straumann, D. (2002). Correlation and Dependence in Risk Management: Properties and Pitfalls. In Risk Management: Value at Risk and Beyond, ed. M.A.H. Dempster, Cambridge University Press, pp. 176–223. https://doi.org/10.1017/CBO9780511615337.008
 - [CyRiM Bashe Attack: Global Infection by Contagious Malware](https://assets.lloyds.com/assets/pdf-bashe-attack-cyrimbasheattack-finalbashe-attack/1/pdf-bashe-attack-CyRiMBasheAttack_FINALbashe-attack.pdf) (2019)
 - [Practical Management of Cyber Exposures and Aggregations](https://lmalloyds.com/wp-content/uploads/2025/07/LMA-EMWG-Cyber-Risk-Paper.pdf) (2025), LMA
 - Zeller, G. & Scherer, M. (2022). A comprehensive model for cyber risk based on marked point processes and its application to insurance. *European Actuarial Journal*, 12(1), 33–85. https://doi.org/10.1007/s13385-021-00290-1
