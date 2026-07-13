@@ -6,6 +6,8 @@ Single-organisation FAIR model: a named collection of `FAIRNode`s whose
 annual aggregate losses are summed to give a total annual aggregate loss:
 
     S_org = ∑_k S_k,   S_k ~ compound Cox process (node k)
+
+It is assumed that the unit of time is a year.
 """
 
 struct FAIRModel
@@ -46,15 +48,3 @@ rand_annual_loss(model::FAIRModel) = rand_annual_loss(Random.default_rng(), mode
 mean_annual_loss(model::FAIRModel) =
     sum(mean_annual_loss, model.nodes; init=zero(partype(model)))
 
-# ---- simulate ----------------------------------------------------------------
-
-"""
-    simulate(model::FAIRModel; n_scenarios=10_000, seed=nothing) -> Vector
-
-Draw `n_scenarios` independent annual aggregate losses from `model`.
-Pass an integer `seed` for reproducibility.
-"""
-function simulate(model::FAIRModel; n_scenarios::Int = 10_000, seed = nothing)
-    rng = seed === nothing ? Random.default_rng() : Xoshiro(seed)
-    return [rand_annual_loss(rng, model) for _ in 1:n_scenarios]
-end

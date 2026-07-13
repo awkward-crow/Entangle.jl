@@ -9,8 +9,10 @@ One risk scenario in the FAIR hierarchy. Combines a `FrequencyModel` and a
 where N is drawn from the frequency model and each L_i is drawn independently
 from the magnitude model.
 
+It is assumed that the unit of time is a year.
+
 `name` labels the node within its model; `factor` tags it to a systemic risk
-factor (e.g. `:aws`, `:ransomware`). The scenario engine activates only nodes
+factor (e.g. `:aws_outage`, `:ransomware`). The scenario engine activates only nodes
 whose `factor` matches the scenario; nodes with `factor = nothing` are
 idiosyncratic and always run at baseline.
 """

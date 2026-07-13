@@ -1,22 +1,3 @@
-@testset "simulate" begin
-    freq  = FrequencyModel(Gamma(4.0, 0.5), Beta(25.0, 75.0))
-    mag   = MagnitudeModel(Exponential(2.0), Exponential(1.0))
-    model = FAIRModel(:test, FAIRNode(freq, mag))
-
-    @testset "returns Vector{Float64}" begin
-        losses = simulate(model; n_scenarios = 500, seed = TEST_SEED)
-        @test losses isa Vector{Float64}
-        @test length(losses) == 500
-        @test all(>=(0.0), losses)
-    end
-
-    @testset "reproducibility" begin
-        l1 = simulate(model; n_scenarios = 200, seed = TEST_SEED)
-        l2 = simulate(model; n_scenarios = 200, seed = TEST_SEED)
-        @test l1 == l2
-    end
-end
-
 @testset "ael" begin
     # mean_rate = E[λ]·E[V] = 2.0 × 0.25 = 0.5
     # mean_loss = 2.0 + 1.0 = 3.0  →  AEL = 1.5
@@ -24,7 +5,8 @@ end
     mag   = MagnitudeModel(Exponential(2.0), Exponential(1.0))
     model = FAIRModel(:test, FAIRNode(freq, mag))
 
-    losses = simulate(model; n_scenarios = 200_000, seed = TEST_SEED)
+    rng    = Xoshiro(TEST_SEED)
+    losses = [rand_annual_loss(rng, model) for _ in 1:200_000]
     @test ael(losses) ≈ 1.5  atol=0.05
 end
 
@@ -32,7 +14,8 @@ end
     freq  = FrequencyModel(Gamma(4.0, 0.5), Beta(25.0, 75.0))
     mag   = MagnitudeModel(Exponential(2.0), Exponential(1.0))
     model = FAIRModel(:test, FAIRNode(freq, mag))
-    losses = simulate(model; n_scenarios = 100_000, seed = TEST_SEED)
+    rng    = Xoshiro(TEST_SEED)
+    losses = [rand_annual_loss(rng, model) for _ in 1:100_000]
 
     @testset "monotone in return period" begin
         @test pml(losses, 10) <= pml(losses, 100)
@@ -54,7 +37,8 @@ end
     freq  = FrequencyModel(Gamma(4.0, 0.5), Beta(25.0, 75.0))
     mag   = MagnitudeModel(Exponential(2.0), Exponential(1.0))
     model = FAIRModel(:test, FAIRNode(freq, mag))
-    losses = simulate(model; n_scenarios = 50_000, seed = TEST_SEED)
+    rng    = Xoshiro(TEST_SEED)
+    losses = [rand_annual_loss(rng, model) for _ in 1:50_000]
 
     ep = exceedance_probability(losses)
 

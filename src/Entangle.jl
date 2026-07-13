@@ -28,7 +28,7 @@ include("scenarios/Scenario.jl")
 export GPD, PERT, Metalog, SplicedSeverity
 export FrequencyModel, rand_rate, rand_count, mean_rate
 export MagnitudeModel, rand_components, rand_loss, mean_loss
-export FAIRNode, FAIRModel, rand_annual_loss, mean_annual_loss, simulate
+export FAIRNode, FAIRModel, rand_annual_loss, mean_annual_loss
 export ael, pml, EPCurve, exceedance_probability, STANDARD_RETURN_PERIODS
 export FactorLoadings, idiosyncratic_weight
 export PortfolioLoadings, loading_matrix
