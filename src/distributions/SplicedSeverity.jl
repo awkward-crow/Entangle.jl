@@ -2,7 +2,7 @@
     SplicedSeverity(body, threshold, tail; p_u)
 
 Two-component severity distribution: a body distribution below `threshold`
-and a GPD tail above it, joined at the splice point.
+and a GPD tail above it, joined at the splice point. It has density
 
     f(x) = (1 − p_u) · f_body(x) / F_body(threshold)   for x ≤ threshold
     f(x) =       p_u · f_GPD(x − threshold)              for x > threshold
