@@ -10,20 +10,17 @@
     @testset "empty loadings" begin
         fl = FactorLoadings()
         @test isempty(fl)
-        @test norm_sq(fl)              == 0.0
         @test idiosyncratic_weight(fl) ≈ 1.0
     end
 
-    @testset "norm_sq and idiosyncratic_weight" begin
-        # 0.4² + 0.3² = 0.16 + 0.09 = 0.25
+    @testset "idiosyncratic_weight" begin
+        # 0.4² + 0.3² = 0.25, so idiosyncratic = sqrt(0.75)
         fl = FactorLoadings(aws = 0.4, crowdstrike = 0.3)
-        @test norm_sq(fl)              ≈ 0.25
         @test idiosyncratic_weight(fl) ≈ sqrt(0.75)
     end
 
-    @testset "boundary: norm_sq exactly 1" begin
+    @testset "boundary: fully loaded factor" begin
         fl = FactorLoadings(aws = 1.0)
-        @test norm_sq(fl)              ≈ 1.0
         @test idiosyncratic_weight(fl) ≈ 0.0  atol=1e-15
     end
 
@@ -162,7 +159,7 @@ end
         @test length(p) == 1
         @test haskey(p, :acme)
         @test :acme in names(p)
-        @test !has_loss_samples(p, :acme)
+        @test !Entangle.has_loss_samples(p, :acme)
     end
 
     @testset "insert! throws on duplicate" begin
@@ -175,9 +172,9 @@ end
         p = Portfolio()
         insert!(p, _simple_model(:acme))
         calculate_marginal_loss!(p, :acme; n_scenarios = 100, seed = TEST_SEED)
-        @test has_loss_samples(p, :acme)
+        @test Entangle.has_loss_samples(p, :acme)
         update!(p, _simple_model(:acme))
-        @test !has_loss_samples(p, :acme)
+        @test !Entangle.has_loss_samples(p, :acme)
     end
 
     @testset "update! throws when absent" begin
@@ -226,8 +223,8 @@ end
         insert!(p, _simple_model(:acme))
         insert!(p, _simple_model(:globex))
         calculate_marginal_losses!(p; n_scenarios = 500, seed = TEST_SEED)
-        @test has_loss_samples(p, :acme)
-        @test has_loss_samples(p, :globex)
+        @test Entangle.has_loss_samples(p, :acme)
+        @test Entangle.has_loss_samples(p, :globex)
     end
 
 end

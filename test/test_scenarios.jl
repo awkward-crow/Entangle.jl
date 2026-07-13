@@ -301,7 +301,7 @@ end
         insert!(p, _scenario_model(:acme))
         se = PortfolioExposures()
         insert!(se, :acme; aws = 0.5)
-        @test !has_loss_samples(p, :acme)
+        @test !Entangle.has_loss_samples(p, :acme)
         @test_nowarn rand_scenario_losses(TEST_SEED, :aws, se, p; n_samples = 100)
     end
 

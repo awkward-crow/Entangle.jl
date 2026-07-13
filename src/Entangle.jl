@@ -30,9 +30,9 @@ export FrequencyModel, rand_rate, rand_count, mean_rate
 export MagnitudeModel, rand_components, rand_loss, mean_loss
 export FAIRNode, FAIRModel, rand_annual_loss, mean_annual_loss, simulate
 export ael, pml, EPCurve, exceedance_probability, STANDARD_RETURN_PERIODS
-export FactorLoadings, norm_sq, idiosyncratic_weight
+export FactorLoadings, idiosyncratic_weight
 export PortfolioLoadings, loading_matrix
-export Portfolio, has_loss_samples, calculate_marginal_loss!, calculate_marginal_losses!, empirical_quantile
+export Portfolio, calculate_marginal_loss!, calculate_marginal_losses!, empirical_quantile
 export FactorCopula, GaussianFactorCopula, StudentTFactorCopula, rand_uniforms
 export rand_portfolio_loss
 export Exposures, PortfolioExposures, update!, rand_scenario_losses
