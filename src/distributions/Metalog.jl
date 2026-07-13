@@ -6,8 +6,12 @@ pairs.
 
 - `ps`: probabilities ∈ (0, 1), strictly increasing
 - `qs`: quantile values, strictly increasing
-- `lower`: finite value produces a semi-bounded lower distribution with
-  support [lower, ∞); default -Inf gives an unbounded distribution over ℝ
+- `lower`: finite value produces a distribution with support [lower, ∞); 
+default -Inf gives an unbounded distribution over ℝ
+
+The basis functions mₖ(p) are: m₁ = 1, m₂ = logit(p), then for k ≥ 3 pairs
+of (p−0.5)ⁿ·logit(p) and (p−0.5)ⁿ for n = 1, 2, …:
+m₃ = (p−0.5)logit(p), m₄ = (p−0.5), m₅ = (p−0.5)²logit(p), m₆ = (p−0.5)², …
 
 The n-term quantile function Q(p) = Σₖ aₖ mₖ(p) is solved from the linear
 system M·a = qs (or M·a = log.(qs .- lower) for semi-bounded). After
