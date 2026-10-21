@@ -5,7 +5,7 @@ Named exposure loadings for a single policyholder, mapping user-defined risk
 factor symbols to loadings in [0, 1].
 
 The norm constraint `Σβ² ≤ 1` is validated at construction; it is required
-for the factor copula simulation to be well-defined.
+for the factor copula simulation to be well-defined. For example,
 
     FactorLoadings(aws = 0.4, crowdstrike = 0.3)
     FactorLoadings(ransomware = 0.6, financial_sector = 0.5)
@@ -93,8 +93,8 @@ Base.length(pl::PortfolioLoadings)                 = length(pl.loadings)
 """
     loading_matrix(factor_loadings) -> Matrix{Float64}
 
-Construct an `(n × K)` factor loading matrix from a vector of `FactorLoadings`,
-where `n` is the number of organisations and `K` is the number of distinct
+Construct an `(n × k)` factor loading matrix from a vector of `FactorLoadings`,
+where `n` is the number of organisations and `k` is the number of distinct
 factors across all entries. Factors are sorted for a stable column ordering.
 """
 function loading_matrix(factor_loadings::Vector{FactorLoadings})
